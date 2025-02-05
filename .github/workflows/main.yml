@@ -1,0 +1,64 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  build_and_pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Setup Prisma (Conditional Schema and DATABASE_URL)
+        run: |
+          # Determine Prisma schema file based on the branch
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            SCHEMA_FILE="prisma/schema.prisma"
+            echo "Using PostgreSQL schema."
+          else
+            SCHEMA_FILE="prisma/schema.sqlite.prisma"
+            echo "Using SQLite schema."
+            export DATABASE_URL="file:./dev.db" # Set DATABASE_URL for SQLite
+          fi
+          # Copy the correct schema to prisma/schema.prisma so prisma cli know what to work with
+          cp "$SCHEMA_FILE" prisma/schema.prisma
+
+          yarn prisma:format
+          yarn prisma:generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NODE_ENV: production
+
+      - name: Lint and Format
+        run: |
+          yarn lint
+          yarn format:check
+
+      - name: Test
+        run: yarn test
+        env:
+          DATABASE_URL: 'file:./test.db'
+
+      - name: Build
+        run: yarn build
+        env:
+          NODE_ENV: production
+          DATABASE_URL: 'file:./prod.db'

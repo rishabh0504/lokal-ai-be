@@ -8,19 +8,23 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "prisma:generate": "npx prisma generate",
+    "prisma:format": "npx prisma format",
     "prisma:clean": "rimraf node_modules/.prisma && rimraf prisma/migrations && npx prisma migrate reset --force",
-    "prisma:restart": "npm run prisma:clean && npx prisma migrate dev --name init && npm run prisma:generate"
+    "prisma:restart": "npm run prisma:clean && npx prisma format && npx prisma migrate dev --name init && npm run prisma:generate",
+    "prisma:reset": "npm run prisma:clean && npm run prisma:restart",
+    "prepare": "husky"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -56,7 +60,9 @@
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
     "globals": "^15.14.0",
+    "husky": "^9.1.7",
     "jest": "^29.7.0",
+    "lint-staged": "^15.4.3",
     "prettier": "^3.4.2",
     "prisma": "^6.3.0",
     "rimraf": "^6.0.1",
@@ -85,5 +91,15 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,md}": [
+      "eslint --fix",
+      "prettier --write",
+      "yarn test --findRelatedTests"
+    ],
+    "*.{md,json}": [
+      "prettier --write"
+    ]
   }
 }

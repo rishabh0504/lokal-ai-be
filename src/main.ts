@@ -1,12 +1,17 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AppModule } from './app.module';
 import { CORS_CONFIG } from './utils/common.constant';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true, // Enable transformation
+      whitelist: true, // Strip unknown properties
+    }),
+  );
   app.enableCors(CORS_CONFIG);
   const config = new DocumentBuilder()
     .setTitle('Lokal-AI')
