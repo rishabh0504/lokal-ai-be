@@ -30,21 +30,23 @@ jobs:
       - name: Setup Prisma (Conditional Schema and DATABASE_URL)
         run: |
           # Determine Prisma schema file based on the branch
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            SCHEMA_FILE="prisma/schema.prisma"
+          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
             echo "Using PostgreSQL schema."
+            # No need to copy the file, just set the DATABASE_URL if it's not already set
+            if [ -z "$DATABASE_URL" ]; then
+              export DATABASE_URL="${{ secrets.DATABASE_URL }}" # If you use secrets for production
+            fi
           else
             SCHEMA_FILE="prisma/schema.sqlite.prisma"
             echo "Using SQLite schema."
             export DATABASE_URL="file:./dev.db" # Set DATABASE_URL for SQLite
+            cp "$SCHEMA_FILE" prisma/schema.prisma # Copy SQLite schema
           fi
-          # Copy the correct schema to prisma/schema.prisma so prisma cli know what to work with
-          cp "$SCHEMA_FILE" prisma/schema.prisma
 
           yarn prisma:format
           yarn prisma:generate
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }} # Production DB URL
           NODE_ENV: production
 
       - name: Lint and Format
