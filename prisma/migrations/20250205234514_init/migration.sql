@@ -1,18 +1,13 @@
 -- CreateTable
-CREATE TABLE "User" (
-    "id" TEXT NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "ChatSession" (
     "id" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
+    "expiresAt" TIMESTAMP(3),
+    "title" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'active',
     "userId" TEXT NOT NULL,
+    "agentId" TEXT,
 
     CONSTRAINT "ChatSession_pkey" PRIMARY KEY ("id")
 );
@@ -24,7 +19,12 @@ CREATE TABLE "ChatMessage" (
     "updated_at" TIMESTAMP(3) NOT NULL,
     "content" JSONB NOT NULL,
     "sender" TEXT NOT NULL,
+    "type" TEXT NOT NULL DEFAULT 'text',
     "sessionId" TEXT NOT NULL,
+    "token_count" INTEGER,
+    "cost" DOUBLE PRECISION,
+    "latency" INTEGER,
+    "agentId" TEXT,
 
     CONSTRAINT "ChatMessage_pkey" PRIMARY KEY ("id")
 );
@@ -70,6 +70,7 @@ CREATE TABLE "Agent" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "llmModelId" TEXT NOT NULL,
+    "prompt" TEXT,
     "temperature" DOUBLE PRECISION,
     "top_p" DOUBLE PRECISION,
     "top_k" INTEGER,
@@ -90,10 +91,13 @@ CREATE UNIQUE INDEX "LLMModel_name_key" ON "LLMModel"("name");
 CREATE UNIQUE INDEX "LLMModel_modelName_key" ON "LLMModel"("modelName");
 
 -- AddForeignKey
-ALTER TABLE "ChatSession" ADD CONSTRAINT "ChatSession_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "ChatSession" ADD CONSTRAINT "ChatSession_agentId_fkey" FOREIGN KEY ("agentId") REFERENCES "Agent"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ChatMessage" ADD CONSTRAINT "ChatMessage_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "ChatSession"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ChatMessage" ADD CONSTRAINT "ChatMessage_agentId_fkey" FOREIGN KEY ("agentId") REFERENCES "Agent"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Agent" ADD CONSTRAINT "Agent_llmModelId_fkey" FOREIGN KEY ("llmModelId") REFERENCES "LLMModel"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
