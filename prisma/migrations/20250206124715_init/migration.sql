@@ -1,3 +1,6 @@
+-- CreateEnum
+CREATE TYPE "ToolType" AS ENUM ('API', 'PythonFunction', 'Search');
+
 -- CreateTable
 CREATE TABLE "ChatSession" (
     "id" TEXT NOT NULL,
@@ -84,6 +87,30 @@ CREATE TABLE "Agent" (
     CONSTRAINT "Agent_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "ToolConfig" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "type" "ToolType" NOT NULL,
+    "config" JSONB,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ToolConfig_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "AgentTool" (
+    "agentId" TEXT NOT NULL,
+    "toolConfigId" TEXT NOT NULL,
+
+    CONSTRAINT "AgentTool_pkey" PRIMARY KEY ("agentId","toolConfigId")
+);
+
+-- CreateIndex
+CREATE INDEX "ChatMessage_sessionId_idx" ON "ChatMessage"("sessionId");
+
 -- CreateIndex
 CREATE UNIQUE INDEX "LLMModel_name_key" ON "LLMModel"("name");
 
@@ -91,10 +118,16 @@ CREATE UNIQUE INDEX "LLMModel_name_key" ON "LLMModel"("name");
 ALTER TABLE "ChatSession" ADD CONSTRAINT "ChatSession_agentId_fkey" FOREIGN KEY ("agentId") REFERENCES "Agent"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ChatMessage" ADD CONSTRAINT "ChatMessage_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "ChatSession"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "ChatMessage" ADD CONSTRAINT "ChatMessage_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "ChatSession"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ChatMessage" ADD CONSTRAINT "ChatMessage_agentId_fkey" FOREIGN KEY ("agentId") REFERENCES "Agent"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Agent" ADD CONSTRAINT "Agent_llmModelId_fkey" FOREIGN KEY ("llmModelId") REFERENCES "LLMModel"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AgentTool" ADD CONSTRAINT "AgentTool_agentId_fkey" FOREIGN KEY ("agentId") REFERENCES "Agent"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "AgentTool" ADD CONSTRAINT "AgentTool_toolConfigId_fkey" FOREIGN KEY ("toolConfigId") REFERENCES "ToolConfig"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

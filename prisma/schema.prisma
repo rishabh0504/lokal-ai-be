@@ -35,7 +35,7 @@ model ChatMessage {
   type    String @default("text") // text, image, code
 
   sessionId String
-  session   ChatSession @relation(fields: [sessionId], references: [id])
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade) //Cascade deletes the Message if seesion is deleted
 
   token_count Int?
   cost        Float?
@@ -43,6 +43,8 @@ model ChatMessage {
 
   agentId String?
   agent   Agent?  @relation(fields: [agentId], references: [id])
+
+  @@index([sessionId])
 }
 
 model LLMModel {
@@ -109,4 +111,35 @@ model Agent {
   updated_at  DateTime      @updatedAt
   ChatSession ChatSession[]
   ChatMessage ChatMessage[]
+  AgentTool   AgentTool[]
+}
+
+model ToolConfig {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  type        ToolType // Enum: "API", "Python Function", "Search"
+
+  config Json? // (API key, URL, etc.)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  agents AgentTool[]
+}
+
+model AgentTool {
+  agentId String
+  agent   Agent  @relation(fields: [agentId], references: [id])
+
+  toolConfigId String
+  toolConfig   ToolConfig @relation(fields: [toolConfigId], references: [id])
+
+  @@id([agentId, toolConfigId])
+}
+
+enum ToolType {
+  API
+  PythonFunction
+  Search
 }

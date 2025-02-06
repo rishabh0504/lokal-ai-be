@@ -22,7 +22,8 @@
     "prisma:generate": "npx prisma generate",
     "prisma:format": "npx prisma format",
     "prisma:clean": "rimraf node_modules/.prisma && rimraf prisma/migrations && npx prisma migrate reset --force",
-    "prisma:restart": "npm run prisma:clean && npx prisma format && npx prisma migrate dev --name init && npm run prisma:generate",
+    "prisma:seed": "ts-node prisma/seed.ts",
+    "prisma:restart": "npm run prisma:clean && npx prisma format && npx prisma migrate dev --name init && npm run prisma:generate && npm run prisma:seed",
     "prisma:reset": "npm run prisma:clean && npm run prisma:restart",
     "prepare": "husky"
   },
@@ -94,9 +95,11 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,md}": [
-      "eslint --fix",
       "prettier --write",
-      "yarn test --findRelatedTests"
+      "eslint --fix",
+      "yarn lint",
+      "yarn test --findRelatedTests",
+      "yarn build"
     ],
     "*.{md,json}": [
       "prettier --write"
