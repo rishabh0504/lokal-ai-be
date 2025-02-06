@@ -48,7 +48,7 @@ model ChatMessage {
 model LLMModel {
   id          String  @id @default(uuid())
   name        String  @unique
-  modelName   String  @unique
+  modelName   String
   version     String?
   description String
 

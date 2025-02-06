@@ -87,9 +87,6 @@ CREATE TABLE "Agent" (
 -- CreateIndex
 CREATE UNIQUE INDEX "LLMModel_name_key" ON "LLMModel"("name");
 
--- CreateIndex
-CREATE UNIQUE INDEX "LLMModel_modelName_key" ON "LLMModel"("modelName");
-
 -- AddForeignKey
 ALTER TABLE "ChatSession" ADD CONSTRAINT "ChatSession_agentId_fkey" FOREIGN KEY ("agentId") REFERENCES "Agent"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
