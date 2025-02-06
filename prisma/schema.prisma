@@ -7,21 +7,21 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id         String        @id
-  created_at DateTime      @default(now())
-  updated_at DateTime      @updatedAt
-  sessions   ChatSession[]
-}
-
 model ChatSession {
-  id         String   @id @default(uuid())
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id         String    @id @default(uuid())
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  expiresAt  DateTime?
 
-  userId   String
-  user     User          @relation(fields: [userId], references: [id])
+  title  String?
+  status String  @default("active") // active, closed, archived
+
+  userId String // Clerk User ID - no relation to a User model
+
   messages ChatMessage[]
+
+  agentId String? //Optional for entire session
+  agent   Agent?  @relation(fields: [agentId], references: [id])
 }
 
 model ChatMessage {
@@ -30,16 +30,25 @@ model ChatMessage {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  content   Json
-  sender    String
+  content Json
+  sender  String
+  type    String @default("text") // text, image, code
+
   sessionId String
   session   ChatSession @relation(fields: [sessionId], references: [id])
+
+  token_count Int?
+  cost        Float?
+  latency     Int?
+
+  agentId String?
+  agent   Agent?  @relation(fields: [agentId], references: [id])
 }
 
 model LLMModel {
   id          String  @id @default(uuid())
   name        String  @unique
-  modelName   String  @unique
+  modelName   String
   version     String?
   description String
 
@@ -86,6 +95,8 @@ model Agent {
   llmModelId String
   llmModel   LLMModel @relation(fields: [llmModelId], references: [id])
 
+  prompt String?
+
   temperature       Float?
   top_p             Float?
   top_k             Int?
@@ -94,6 +105,8 @@ model Agent {
   frequency_penalty Float?
   repeat_penalty    Float?
 
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+  ChatSession ChatSession[]
+  ChatMessage ChatMessage[]
 }
