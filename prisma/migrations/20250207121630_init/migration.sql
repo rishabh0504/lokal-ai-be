@@ -6,7 +6,7 @@ CREATE TABLE "ChatSession" (
     "id" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
-    "expiresAt" TIMESTAMP(3),
+    "expires_at" TIMESTAMP(3),
     "title" TEXT,
     "status" TEXT NOT NULL DEFAULT 'active',
     "userId" TEXT NOT NULL,

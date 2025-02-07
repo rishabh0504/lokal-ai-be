@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AgentModule } from './agent/agent.module';
 import { ChatModule } from './chat/chat.module';
 import { LlmModule } from './llm/llm.module';
+import { SessionModule } from './session/session.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { LlmModule } from './llm/llm.module';
     AgentModule,
     ChatModule,
     LlmModule,
+    SessionModule,
   ],
   controllers: [],
   providers: [],

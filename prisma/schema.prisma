@@ -11,12 +11,12 @@ model ChatSession {
   id         String    @id @default(uuid())
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
-  expiresAt  DateTime?
+  expires_at DateTime?
 
   title  String?
   status String  @default("active") // active, closed, archived
 
-  userId String // Clerk User ID - no relation to a User model
+  userId String
 
   messages ChatMessage[]
 
