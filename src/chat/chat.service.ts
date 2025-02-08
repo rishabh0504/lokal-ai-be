@@ -2,8 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Observable, Subject } from 'rxjs';
 import { ChatMessage } from '@prisma/client';
-import { Ollama } from '@langchain/community/llms/ollama'; // Import Ollama
+import { Ollama } from '@langchain/community/llms/ollama';
 import { ConfigService } from '@nestjs/config';
+
+// Define a type for message content to ensure proper string conversion
+interface FormattedMessage {
+  sender: string;
+  content: string;
+}
 
 @Injectable()
 export class ChatService {
@@ -65,15 +71,21 @@ export class ChatService {
       const chatHistory = await this.prisma.chatMessage.findMany({
         where: { sessionId: sessionId },
         orderBy: { created_at: 'asc' },
-        take: 10, // Limit history for performance
+        take: 10,
       });
 
       const formattedHistory = chatHistory
-        .map((message) => `${message.sender}: ${message.content}`)
+        .map(
+          (message): FormattedMessage => ({
+            sender: message.sender,
+            content: message.content as string,
+          }),
+        )
+        .map(({ sender, content }) => `${sender}: ${content}`)
         .join('\n');
 
       this.logger.log(`Creating prompt for LLM.`);
-      const prompt = `You are a coding assistant. Answer questions concisely with code examples.\nHistory: ${formattedHistory}\nUser: ${messageContent}\nAssistant:`;
+      const prompt = `${agent.prompt}.\nHistory: ${formattedHistory}\nUser: ${messageContent}\nAssistant:`;
 
       this.logger.log(`Calling Ollama API with model: ${llmModel.modelName}`);
 
@@ -84,34 +96,58 @@ export class ChatService {
         topP: agent.top_p ?? llmModel.top_pDefault ?? 0.9,
       });
 
-      try {
-        const stream = await model.stream(prompt); // Use model.stream
+      let fullResponse = '';
 
-        let fullResponse = ''; // to store cumulative response
+      try {
+        const stream = await model.stream(prompt);
+
         for await (const part of stream) {
           fullResponse += part;
-          try {
-            // Save each chunk to the database
-            const newMessage = await this.prisma.chatMessage.create({
-              data: {
-                sessionId: sessionId,
-                content: fullResponse,
-                sender: 'agent',
-                agentId: agentId,
-              },
-            });
-
-            this.getChatMessageStream(sessionId);
-            this.messageStreams[sessionId]?.next(newMessage);
-          } catch (dbError) {
-            this.logger.error(`Error creating chat message in DB:`, dbError);
-          }
         }
       } catch (ollamaError) {
-        this.logger.error(`Ollama stream error:`, ollamaError);
-        throw ollamaError; // Re-throw so the controller can handle it appropriately.
+        //Error
+        if (ollamaError instanceof Error) {
+          this.logger.error(
+            `Ollama stream error: ${ollamaError.message}`,
+            ollamaError.stack,
+          );
+        } else {
+          this.logger.error(
+            `An unknown Ollama error occurred: ${String(ollamaError)}`,
+          );
+        }
+        throw ollamaError;
       }
 
+      try {
+        // Save the complete message to the database
+        const newMessage = await this.prisma.chatMessage.create({
+          data: {
+            sessionId: sessionId,
+            content: fullResponse, // Save the entire accumulated response
+            sender: 'agent',
+            agentId: agentId,
+          },
+        });
+
+        // Stream the complete message to the client
+        this.getChatMessageStream(sessionId);
+        this.messageStreams[sessionId]?.next(newMessage);
+      } catch (dbError) {
+        //Prisma.PrismaClientKnownRequestError
+        if (dbError instanceof Error) {
+          this.logger.error(
+            `Error creating chat message in DB: ${dbError.message}`,
+            dbError.stack,
+          );
+        } else {
+          this.logger.error(
+            `An unknown database error occurred: ${String(dbError)}`,
+          );
+        }
+      }
+
+      // Save the user's message
       try {
         const userMessage = await this.prisma.chatMessage.create({
           data: {
@@ -124,12 +160,31 @@ export class ChatService {
         this.getChatMessageStream(sessionId);
         this.messageStreams[sessionId]?.next(userMessage);
       } catch (dbError) {
-        this.logger.error(`Error creating user message in DB:`, dbError);
+        //Prisma.PrismaClientKnownRequestError
+        if (dbError instanceof Error) {
+          this.logger.error(
+            `Error creating user message in DB: ${dbError.message}`,
+            dbError.stack,
+          );
+        } else {
+          this.logger.error(
+            `An unknown database error occurred: ${String(dbError)}`,
+          );
+        }
       }
 
       this.logger.log(`sendMessage completed successfully`);
-    } catch (error) {
-      this.logger.error(`Error in sendMessage: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(
+          `Error in sendMessage: ${error.message}`,
+          error.stack,
+        );
+      } else {
+        this.logger.error(
+          `Error in sendMessage: An unknown error occurred: ${String(error)}`,
+        );
+      }
       throw error; //Let controller handle
     }
   }

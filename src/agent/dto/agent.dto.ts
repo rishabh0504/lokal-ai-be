@@ -59,6 +59,15 @@ export class AgentDto {
   @IsNumber()
   @IsOptional()
   repeat_penalty?: number;
+
+  @ApiProperty({ description: 'System Prompt for the agent', required: true })
+  @IsString()
+  prompt: string;
+
+  @ApiProperty({ description: 'Description of the agent', required: false })
+  @IsString()
+  @IsOptional()
+  description: string;
 }
 
 export class AgentResponseDto extends AgentDto {

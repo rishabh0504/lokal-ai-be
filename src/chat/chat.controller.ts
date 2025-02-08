@@ -1,39 +1,28 @@
 import {
+  Body,
   Controller,
   Get,
-  Param,
-  Sse,
-  Body,
-  Post,
   HttpCode,
   HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Sse,
   UsePipes,
   ValidationPipe,
-  StreamableFile,
-  Response,
-  Header,
-  Logger,
 } from '@nestjs/common';
 import {
-  Observable,
-  from,
-  map,
-  catchError,
-  throwError,
-  tap,
-  switchMap,
-} from 'rxjs';
-import { ChatService } from './chat.service';
-import { ChatMessage } from '@prisma/client';
-import {
-  ApiTags,
-  ApiParam,
   ApiBody,
   ApiOperation,
+  ApiParam,
+  ApiProperty,
   ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ChatMessage } from '@prisma/client';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { Observable, catchError, map, throwError } from 'rxjs';
+import { ChatService } from './chat.service';
 
 class SendMessageDto {
   @ApiProperty({
@@ -87,9 +76,10 @@ export class ChatController {
     this.logger.log(`SSE connection established for session: ${sessionId}`);
     return this.chatService.getChatMessageStream(sessionId).pipe(
       map((message: ChatMessage) => ({ data: message })),
-      catchError((err) => {
+      catchError((err: Error) => {
+        //Type the err
         this.logger.error(`Error in SSE stream: ${err.message}`, err.stack);
-        return throwError(() => new Error('SSE stream error')); //Re-throw as an Observable Error
+        return throwError(() => new Error('SSE stream error'));
       }),
     );
   }
@@ -128,12 +118,19 @@ export class ChatController {
         sendMessageDto.agentId,
       );
       this.logger.log(`Message sent to chatService for processing.`);
-    } catch (error) {
+    } catch (error: unknown) {
+      let errorMessage = 'An unexpected error occurred.';
+      let errorStack: string | undefined = undefined;
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        errorStack = error.stack;
+      } else {
+        errorMessage = String(error);
+      }
       this.logger.error(
-        `Error sending message to chatService: ${error.message}`,
-        error.stack,
+        `Error sending message to chatService: ${errorMessage}`,
+        errorStack,
       );
-      // Re-throw the error to be handled by NestJS's global exception filter (if you have one)
       throw error;
     }
   }

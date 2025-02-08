@@ -11,7 +11,7 @@ export class OllamaService {
     const host = process.env.OLLAMA_HOST;
     this.ollama = new Ollama({
       host: host,
-      fetch: async (url, options) => {
+      fetch: async (url: string, options) => {
         const urlObject = new URL(url);
         if (
           urlObject.hostname === 'localhost' ||

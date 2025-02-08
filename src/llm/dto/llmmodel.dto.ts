@@ -28,6 +28,11 @@ export class LLMModelDto {
   @IsNotEmpty()
   description: string;
 
+  @ApiProperty({ description: 'Default System Prompt of the LLM Model' })
+  @IsString()
+  @IsNotEmpty()
+  defaultPrompt: string;
+
   @ApiProperty({ description: 'Minimum temperature', required: false })
   @IsNumber()
   @IsOptional()
