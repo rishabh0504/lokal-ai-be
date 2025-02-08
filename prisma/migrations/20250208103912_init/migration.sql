@@ -39,7 +39,7 @@ CREATE TABLE "LLMModel" (
     "modelName" TEXT NOT NULL,
     "version" TEXT,
     "description" TEXT NOT NULL,
-    "defaultPrompt" TEXT NOT NULL,
+    "defaultPrompt" TEXT,
     "temperatureMin" DOUBLE PRECISION DEFAULT 0.0,
     "temperatureMax" DOUBLE PRECISION DEFAULT 1.0,
     "temperatureDefault" DOUBLE PRECISION DEFAULT 0.7,

@@ -53,7 +53,7 @@ model LLMModel {
   modelName     String
   version       String?
   description   String
-  defaultPrompt String
+  defaultPrompt String?
 
   temperatureMin     Float? @default(0.0)
   temperatureMax     Float? @default(1.0)
