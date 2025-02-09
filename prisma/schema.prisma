@@ -11,12 +11,12 @@ model ChatSession {
   id         String    @id @default(uuid())
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
-  expiresAt  DateTime?
+  expires_at DateTime?
 
   title  String?
   status String  @default("active") // active, closed, archived
 
-  userId String // Clerk User ID - no relation to a User model
+  userId String
 
   messages ChatMessage[]
 
@@ -35,7 +35,7 @@ model ChatMessage {
   type    String @default("text") // text, image, code
 
   sessionId String
-  session   ChatSession @relation(fields: [sessionId], references: [id])
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade) //Cascade deletes the Message if seesion is deleted
 
   token_count Int?
   cost        Float?
@@ -43,14 +43,17 @@ model ChatMessage {
 
   agentId String?
   agent   Agent?  @relation(fields: [agentId], references: [id])
+
+  @@index([sessionId])
 }
 
 model LLMModel {
-  id          String  @id @default(uuid())
-  name        String  @unique
-  modelName   String
-  version     String?
-  description String
+  id            String  @id @default(uuid())
+  name          String  @unique
+  modelName     String
+  version       String?
+  description   String
+  defaultPrompt String
 
   temperatureMin     Float? @default(0.0)
   temperatureMax     Float? @default(1.0)
@@ -92,10 +95,10 @@ model Agent {
   id   String @id @default(uuid())
   name String
 
-  llmModelId String
-  llmModel   LLMModel @relation(fields: [llmModelId], references: [id])
-
-  prompt String?
+  llmModelId  String
+  llmModel    LLMModel @relation(fields: [llmModelId], references: [id])
+  description String?
+  prompt      String?
 
   temperature       Float?
   top_p             Float?
@@ -109,4 +112,35 @@ model Agent {
   updated_at  DateTime      @updatedAt
   ChatSession ChatSession[]
   ChatMessage ChatMessage[]
+  AgentTool   AgentTool[]
+}
+
+model ToolConfig {
+  id          String   @id @default(uuid())
+  name        String
+  description String
+  type        ToolType // Enum: "API", "Python Function", "Search"
+
+  config Json? // (API key, URL, etc.)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  agents AgentTool[]
+}
+
+model AgentTool {
+  agentId String
+  agent   Agent  @relation(fields: [agentId], references: [id])
+
+  toolConfigId String
+  toolConfig   ToolConfig @relation(fields: [toolConfigId], references: [id])
+
+  @@id([agentId, toolConfigId])
+}
+
+enum ToolType {
+  API
+  PythonFunction
+  Search
 }
