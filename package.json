@@ -30,6 +30,7 @@
   "dependencies": {
     "@langchain/community": "^0.3.29",
     "@langchain/core": "^0.3.38",
+    "@langchain/ollama": "^0.1.6",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.1",

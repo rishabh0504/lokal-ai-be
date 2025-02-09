@@ -74,6 +74,33 @@ export class ChatService {
         take: 10,
       });
 
+      // Save the user's message
+      try {
+        const userMessage = await this.prisma.chatMessage.create({
+          data: {
+            sessionId: sessionId,
+            content: messageContent,
+            sender: chatSession.userId,
+            agentId: agentId,
+          },
+        });
+        this.getChatMessageStream(sessionId);
+        this.messageStreams[sessionId]?.next(userMessage);
+      } catch (dbError) {
+        //Prisma.PrismaClientKnownRequestError
+        if (dbError instanceof Error) {
+          this.logger.error(
+            `Error creating user message in DB: ${dbError.message}`,
+            dbError.stack,
+          );
+        } else {
+          this.logger.error(
+            `An unknown database error occurred: ${String(dbError)}`,
+          );
+        }
+      }
+
+      this.logger.log(`sendMessage completed successfully`);
       const formattedHistory = chatHistory
         .map(
           (message): FormattedMessage => ({
@@ -94,6 +121,10 @@ export class ChatService {
         model: llmModel.modelName,
         temperature: agent.temperature ?? llmModel.temperatureDefault ?? 0.7,
         topP: agent.top_p ?? llmModel.top_pDefault ?? 0.9,
+        numPredict: agent.max_tokens ?? 500, // Maximum 500 tokens
+        stop: ['\nUser:', '<|file_separator|>'], // Stop at these delimiters
+        repeatPenalty: agent.repeat_penalty ?? 1.1, // Discourage repetition
+        repeatLastN: 64, // Analyze the last 64 tokens for repetition
       });
 
       let fullResponse = '';
@@ -146,34 +177,6 @@ export class ChatService {
           );
         }
       }
-
-      // Save the user's message
-      try {
-        const userMessage = await this.prisma.chatMessage.create({
-          data: {
-            sessionId: sessionId,
-            content: messageContent,
-            sender: 'user',
-            agentId: agentId,
-          },
-        });
-        this.getChatMessageStream(sessionId);
-        this.messageStreams[sessionId]?.next(userMessage);
-      } catch (dbError) {
-        //Prisma.PrismaClientKnownRequestError
-        if (dbError instanceof Error) {
-          this.logger.error(
-            `Error creating user message in DB: ${dbError.message}`,
-            dbError.stack,
-          );
-        } else {
-          this.logger.error(
-            `An unknown database error occurred: ${String(dbError)}`,
-          );
-        }
-      }
-
-      this.logger.log(`sendMessage completed successfully`);
     } catch (error: unknown) {
       if (error instanceof Error) {
         this.logger.error(
