@@ -1,20 +1,27 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { Observable, Subject } from 'rxjs';
-import { ChatMessage } from '@prisma/client';
 import { Ollama } from '@langchain/community/llms/ollama';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ChatMessage } from '@prisma/client';
+import { Subject } from 'rxjs';
+import { PrismaService } from 'src/prisma/prisma.service';
 
-// Define a type for message content to ensure proper string conversion
 interface FormattedMessage {
   sender: string;
   content: string;
 }
 
+interface SSEPayload {
+  content: string;
+  sender: string;
+  done: boolean;
+}
+
 @Injectable()
 export class ChatService {
   private readonly logger = new Logger(ChatService.name);
-  private messageStreams: { [sessionId: string]: Subject<ChatMessage> } = {};
+  private userMessageStreams: { [sessionId: string]: Subject<SSEPayload> } = {};
+  private agentMessageStreams: { [sessionId: string]: Subject<SSEPayload> } =
+    {};
   private readonly ollamaBaseUrl: string;
 
   constructor(
@@ -25,11 +32,18 @@ export class ChatService {
       this.configService.get<string>('OLLAMA_HOST') || 'http://localhost:11434';
   }
 
-  getChatMessageStream(sessionId: string): Observable<ChatMessage> {
-    if (!this.messageStreams[sessionId]) {
-      this.messageStreams[sessionId] = new Subject<ChatMessage>();
+  getUserChatMessageStream(sessionId: string): Subject<SSEPayload> {
+    if (!this.userMessageStreams[sessionId]) {
+      this.userMessageStreams[sessionId] = new Subject<SSEPayload>();
     }
-    return this.messageStreams[sessionId].asObservable();
+    return this.userMessageStreams[sessionId];
+  }
+
+  getAgentChatMessageStream(sessionId: string): Subject<SSEPayload> {
+    if (!this.agentMessageStreams[sessionId]) {
+      this.agentMessageStreams[sessionId] = new Subject<SSEPayload>();
+    }
+    return this.agentMessageStreams[sessionId];
   }
 
   async sendMessage(
@@ -74,9 +88,9 @@ export class ChatService {
         take: 10,
       });
 
-      // Save the user's message
+      let userMessage: ChatMessage;
       try {
-        const userMessage = await this.prisma.chatMessage.create({
+        userMessage = await this.prisma.chatMessage.create({
           data: {
             sessionId: sessionId,
             content: messageContent,
@@ -84,10 +98,13 @@ export class ChatService {
             agentId: agentId,
           },
         });
-        this.getChatMessageStream(sessionId);
-        this.messageStreams[sessionId]?.next(userMessage);
+        const userMessageStream = this.getUserChatMessageStream(sessionId);
+        userMessageStream.next({
+          content: userMessage.content as string,
+          sender: chatSession.userId,
+          done: true,
+        });
       } catch (dbError) {
-        //Prisma.PrismaClientKnownRequestError
         if (dbError instanceof Error) {
           this.logger.error(
             `Error creating user message in DB: ${dbError.message}`,
@@ -98,6 +115,7 @@ export class ChatService {
             `An unknown database error occurred: ${String(dbError)}`,
           );
         }
+        return;
       }
 
       this.logger.log(`sendMessage completed successfully`);
@@ -121,22 +139,50 @@ export class ChatService {
         model: llmModel.modelName,
         temperature: agent.temperature ?? llmModel.temperatureDefault ?? 0.7,
         topP: agent.top_p ?? llmModel.top_pDefault ?? 0.9,
-        numPredict: agent.max_tokens ?? 500, // Maximum 500 tokens
-        stop: ['\nUser:', '<|file_separator|>'], // Stop at these delimiters
-        repeatPenalty: agent.repeat_penalty ?? 1.1, // Discourage repetition
-        repeatLastN: 64, // Analyze the last 64 tokens for repetition
+        numPredict: agent.max_tokens ?? 500,
+        stop: ['\nUser:', '<|file_separator|>'],
+        repeatPenalty: agent.repeat_penalty ?? 1.1,
+        repeatLastN: 64,
       });
 
       let fullResponse = '';
 
       try {
         const stream = await model.stream(prompt);
+        let agentMessageStream = this.getAgentChatMessageStream(sessionId);
 
         for await (const part of stream) {
           fullResponse += part;
+          agentMessageStream.next({
+            content: part,
+            sender: 'agent',
+            done: false,
+          });
+        }
+        agentMessageStream.next({ content: '', sender: 'agent', done: true });
+
+        try {
+          const newMessage = await this.prisma.chatMessage.create({
+            data: {
+              sessionId: sessionId,
+              content: fullResponse,
+              sender: 'agent',
+              agentId: agentId,
+            },
+          });
+        } catch (dbError) {
+          if (dbError instanceof Error) {
+            this.logger.error(
+              `Error creating chat message in DB: ${dbError.message}`,
+              dbError.stack,
+            );
+          } else {
+            this.logger.error(
+              `An unknown database error occurred: ${String(dbError)}`,
+            );
+          }
         }
       } catch (ollamaError) {
-        //Error
         if (ollamaError instanceof Error) {
           this.logger.error(
             `Ollama stream error: ${ollamaError.message}`,
@@ -149,34 +195,6 @@ export class ChatService {
         }
         throw ollamaError;
       }
-
-      try {
-        // Save the complete message to the database
-        const newMessage = await this.prisma.chatMessage.create({
-          data: {
-            sessionId: sessionId,
-            content: fullResponse, // Save the entire accumulated response
-            sender: 'agent',
-            agentId: agentId,
-          },
-        });
-
-        // Stream the complete message to the client
-        this.getChatMessageStream(sessionId);
-        this.messageStreams[sessionId]?.next(newMessage);
-      } catch (dbError) {
-        //Prisma.PrismaClientKnownRequestError
-        if (dbError instanceof Error) {
-          this.logger.error(
-            `Error creating chat message in DB: ${dbError.message}`,
-            dbError.stack,
-          );
-        } else {
-          this.logger.error(
-            `An unknown database error occurred: ${String(dbError)}`,
-          );
-        }
-      }
     } catch (error: unknown) {
       if (error instanceof Error) {
         this.logger.error(
@@ -188,7 +206,7 @@ export class ChatService {
           `Error in sendMessage: An unknown error occurred: ${String(error)}`,
         );
       }
-      throw error; //Let controller handle
+      throw error;
     }
   }
 }
