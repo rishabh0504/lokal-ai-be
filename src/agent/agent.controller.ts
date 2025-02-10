@@ -9,6 +9,7 @@ import {
   Param,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -19,11 +20,13 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Agent } from '@prisma/client';
+import { ClerkGuard } from 'src/auth/clerk.guard';
 import { AgentService } from './agent.service';
 import { AgentDto, AgentResponseDto } from './dto/agent.dto';
 
 @ApiTags('agents')
 @Controller('agents')
+@UseGuards(ClerkGuard)
 export class AgentController {
   constructor(private readonly agentService: AgentService) {}
 

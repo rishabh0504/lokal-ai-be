@@ -1,3 +1,4 @@
+import { ClerkExpressWithAuth } from '@clerk/clerk-sdk-node';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -13,6 +14,8 @@ async function bootstrap() {
     }),
   );
   app.enableCors(CORS_CONFIG);
+  app.use(ClerkExpressWithAuth());
+
   const config = new DocumentBuilder()
     .setTitle('Lokal-AI')
     .setDescription('API documentation for Lokal-AI')

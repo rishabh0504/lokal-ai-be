@@ -1,11 +1,13 @@
 import {
   Controller,
   Get,
-  NotFoundException,
   InternalServerErrorException,
+  NotFoundException,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ListResponse } from 'ollama';
+import { ClerkGuard } from 'src/auth/clerk.guard';
 import { OllamaService } from './ollama.service';
 
 export interface ModelDetails {
@@ -27,6 +29,7 @@ export interface OllamaLLMModel {
 
 @ApiTags('ai-services')
 @Controller('ai-services')
+@UseGuards(ClerkGuard)
 export class OllamaController {
   constructor(private readonly ollamaService: OllamaService) {}
 
@@ -38,7 +41,7 @@ export class OllamaController {
     try {
       return await this.ollamaService.getAvailableModels();
     } catch (error: unknown) {
-      console.error('Error getting Ollama models:', error); // Log the error
+      console.error('Error getting Ollama models:', error);
 
       if (
         typeof error === 'object' &&

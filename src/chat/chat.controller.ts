@@ -8,6 +8,7 @@ import {
   Param,
   Post,
   Sse,
+  UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -19,11 +20,13 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Observable, catchError, map, merge, throwError } from 'rxjs';
+import { ClerkGuard } from 'src/auth/clerk.guard';
 import { ChatService } from './chat.service';
 import { SendMessageDto } from './dto/send-message-dto';
 
 @Controller('chat')
 @ApiTags('Chat')
+@UseGuards(ClerkGuard)
 export class ChatController {
   private readonly logger = new Logger(ChatController.name);
   constructor(private readonly chatService: ChatService) {}

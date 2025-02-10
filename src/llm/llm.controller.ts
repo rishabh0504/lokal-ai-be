@@ -9,6 +9,7 @@ import {
   Param,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -19,11 +20,13 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { LLMModel } from '@prisma/client';
-import { LLMService } from './llm.service';
+import { ClerkGuard } from 'src/auth/clerk.guard';
 import { LLMModelDto, LLMModelResponseDto } from './dto/llmmodel.dto';
+import { LLMService } from './llm.service';
 
 @ApiTags('llm-models')
 @Controller('llm-models')
+@UseGuards(ClerkGuard)
 export class LLMController {
   constructor(private readonly llmService: LLMService) {}
 

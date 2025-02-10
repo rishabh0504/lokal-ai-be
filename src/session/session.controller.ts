@@ -1,4 +1,4 @@
-import { Controller } from '@nestjs/common';
+import { Controller, UseGuards } from '@nestjs/common';
 
 import {
   Body,
@@ -10,12 +10,14 @@ import {
   Post,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ClerkGuard } from 'src/auth/clerk.guard';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
 import { SessionService } from './session.service';
 
 @ApiTags('sessions')
 @Controller('sessions')
+@UseGuards(ClerkGuard)
 export class SessionController {
   constructor(private readonly sessionService: SessionService) {}
 
