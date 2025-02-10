@@ -31,7 +31,7 @@ model ChatMessage {
   updated_at DateTime @updatedAt
 
   content Json
-  sender  String
+  sender  String // If agentId and sender is same then message sent by the agent else user and fetched by sessionId
   type    String @default("text") // text, image, code
 
   sessionId String

@@ -28,8 +28,10 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@clerk/clerk-sdk-node": "^5.1.6",
     "@langchain/community": "^0.3.29",
     "@langchain/core": "^0.3.38",
+    "@langchain/ollama": "^0.1.6",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.1",
@@ -40,6 +42,8 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "dotenv": "^16.4.7",
+    "jsonwebtoken": "^9.0.2",
+    "jwks-rsa": "^3.1.0",
     "langchain": "^0.3.15",
     "ollama": "^0.5.12",
     "pg": "^8.13.1",

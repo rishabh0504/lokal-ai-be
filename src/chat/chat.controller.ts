@@ -15,33 +15,12 @@ import {
   ApiBody,
   ApiOperation,
   ApiParam,
-  ApiProperty,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { ChatMessage } from '@prisma/client';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { Observable, catchError, map, throwError } from 'rxjs';
+import { Observable, catchError, map, merge, throwError } from 'rxjs';
 import { ChatService } from './chat.service';
-
-class SendMessageDto {
-  @ApiProperty({
-    description: 'Message content',
-    example: 'Hello, how are you?',
-  })
-  @IsNotEmpty()
-  @IsString()
-  message: string;
-
-  @ApiProperty({
-    description: 'Agent ID (optional)',
-    example: 'agent456',
-    required: false,
-  })
-  @IsOptional()
-  @IsString()
-  agentId?: string;
-}
+import { SendMessageDto } from './dto/send-message-dto';
 
 @Controller('chat')
 @ApiTags('Chat')
@@ -72,12 +51,19 @@ export class ChatController {
   })
   sse(
     @Param('sessionId') sessionId: string,
-  ): Observable<{ data: ChatMessage }> {
+  ): Observable<{ data: { content: string; done: boolean; sender: string } }> {
     this.logger.log(`SSE connection established for session: ${sessionId}`);
-    return this.chatService.getChatMessageStream(sessionId).pipe(
-      map((message: ChatMessage) => ({ data: message })),
+
+    const userStream = this.chatService
+      .getUserChatMessageStream(sessionId)
+      .pipe(map((message) => ({ data: message })));
+
+    const agentStream = this.chatService
+      .getAgentChatMessageStream(sessionId)
+      .pipe(map((message) => ({ data: message })));
+
+    return merge(userStream, agentStream).pipe(
       catchError((err: Error) => {
-        //Type the err
         this.logger.error(`Error in SSE stream: ${err.message}`, err.stack);
         return throwError(() => new Error('SSE stream error'));
       }),
