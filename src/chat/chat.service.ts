@@ -149,7 +149,7 @@ export class ChatService {
 
       try {
         const stream = await model.stream(prompt);
-        let agentMessageStream = this.getAgentChatMessageStream(sessionId);
+        const agentMessageStream = this.getAgentChatMessageStream(sessionId);
 
         for await (const part of stream) {
           fullResponse += part;
@@ -162,7 +162,7 @@ export class ChatService {
         agentMessageStream.next({ content: '', sender: 'agent', done: true });
 
         try {
-          const newMessage = await this.prisma.chatMessage.create({
+          await this.prisma.chatMessage.create({
             data: {
               sessionId: sessionId,
               content: fullResponse,
