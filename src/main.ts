@@ -15,6 +15,7 @@ async function bootstrap() {
   );
   app.enableCors(CORS_CONFIG);
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   app.use(cookieParser());
 
   const config = new DocumentBuilder()
