@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
-import { PrismaModule } from './prisma/prisma.module';
-import { OllamaModule } from './ollama/ollama.module';
 import { ConfigModule } from '@nestjs/config';
-import { AgentModule } from './agent/agent.module';
-import { ChatModule } from './chat/chat.module';
-import { LlmModule } from './llm/llm.module';
-import { SessionModule } from './session/session.module';
+import { AgentModule } from './modules/agent/agent.module';
+import { ClerkAuthGuard } from './auth/clerk-auth-guard';
+import { ChatModule } from './modules/chat/chat.module';
+import { LlmModule } from './modules/llm/llm.module';
+import { OllamaModule } from './modules/ollama/ollama.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { SessionModule } from './modules/session/session.module';
 
 @Module({
   imports: [
@@ -21,6 +22,6 @@ import { SessionModule } from './session/session.module';
     SessionModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [ClerkAuthGuard],
 })
 export class AppModule {}

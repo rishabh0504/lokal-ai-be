@@ -1,6 +1,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { CORS_CONFIG } from './utils/common.constant';
 
@@ -8,11 +9,15 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(
     new ValidationPipe({
-      transform: true, // Enable transformation
-      whitelist: true, // Strip unknown properties
+      transform: true,
+      whitelist: true,
     }),
   );
   app.enableCors(CORS_CONFIG);
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  app.use(cookieParser());
+
   const config = new DocumentBuilder()
     .setTitle('Lokal-AI')
     .setDescription('API documentation for Lokal-AI')

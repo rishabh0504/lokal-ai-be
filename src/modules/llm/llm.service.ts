@@ -4,10 +4,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { LLMModel } from '@prisma/client';
+import { InputJsonValue } from '@prisma/client/runtime/library';
 import { plainToInstance } from 'class-transformer';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { LLMModelDto, LLMModelResponseDto } from './dto/llmmodel.dto';
-import { InputJsonValue } from '@prisma/client/runtime/library';
 
 @Injectable()
 export class LLMService {
@@ -15,7 +15,6 @@ export class LLMService {
 
   async createLLMModel(llmModel: LLMModelDto): Promise<LLMModel> {
     try {
-      // Parse stop_sequences from JSON string to JSON object before creating the model
       const data: Omit<LLMModelDto, 'stop_sequences'> & {
         stop_sequences?: InputJsonValue;
       } = { ...llmModel };
@@ -77,7 +76,6 @@ export class LLMService {
     data: LLMModelDto,
   ): Promise<LLMModelResponseDto> {
     try {
-      // Parse stop_sequences from JSON string to JSON object before updating the model
       const updateData: Omit<LLMModelDto, 'stop_sequences'> & {
         stop_sequences?: InputJsonValue;
       } = { ...data };

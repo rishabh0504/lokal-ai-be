@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { LLMService } from './llm.service';
-import { LLMController } from './llm.controller';
 import { PrismaModule } from 'src/prisma/prisma.module';
+import { LLMController } from './llm.controller';
+import { LLMService } from './llm.service';
 
 @Module({
   providers: [LLMService],
