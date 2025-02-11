@@ -20,13 +20,13 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { LLMModel } from '@prisma/client';
-import { ClerkGuard } from 'src/auth/clerk.guard';
+import { ClerkAuthGuard } from 'src/auth/clerk-auth-guard';
 import { LLMModelDto, LLMModelResponseDto } from './dto/llmmodel.dto';
 import { LLMService } from './llm.service';
 
 @ApiTags('llm-models')
 @Controller('llm-models')
-@UseGuards(ClerkGuard)
+@UseGuards(ClerkAuthGuard)
 export class LLMController {
   constructor(private readonly llmService: LLMService) {}
 

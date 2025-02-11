@@ -20,13 +20,13 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Agent } from '@prisma/client';
-import { ClerkGuard } from 'src/auth/clerk.guard';
+import { ClerkAuthGuard } from 'src/auth/clerk-auth-guard';
 import { AgentService } from './agent.service';
 import { AgentDto, AgentResponseDto } from './dto/agent.dto';
 
 @ApiTags('agents')
 @Controller('agents')
-@UseGuards(ClerkGuard)
+@UseGuards(ClerkAuthGuard)
 export class AgentController {
   constructor(private readonly agentService: AgentService) {}
 

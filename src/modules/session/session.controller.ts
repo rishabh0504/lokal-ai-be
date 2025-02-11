@@ -10,14 +10,14 @@ import {
   Post,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
-import { ClerkGuard } from 'src/auth/clerk.guard';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
 import { SessionService } from './session.service';
+import { ClerkAuthGuard } from 'src/auth/clerk-auth-guard';
 
 @ApiTags('sessions')
 @Controller('sessions')
-@UseGuards(ClerkGuard)
+@UseGuards(ClerkAuthGuard)
 export class SessionController {
   constructor(private readonly sessionService: SessionService) {}
 

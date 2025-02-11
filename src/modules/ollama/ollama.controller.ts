@@ -7,8 +7,8 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ListResponse } from 'ollama';
-import { ClerkGuard } from 'src/auth/clerk.guard';
 import { OllamaService } from './ollama.service';
+import { ClerkAuthGuard } from 'src/auth/clerk-auth-guard';
 
 export interface ModelDetails {
   parent_model: string;
@@ -29,7 +29,7 @@ export interface OllamaLLMModel {
 
 @ApiTags('ai-services')
 @Controller('ai-services')
-@UseGuards(ClerkGuard)
+@UseGuards(ClerkAuthGuard)
 export class OllamaController {
   constructor(private readonly ollamaService: OllamaService) {}
 

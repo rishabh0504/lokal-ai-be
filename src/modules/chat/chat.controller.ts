@@ -20,13 +20,13 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Observable, catchError, map, merge, throwError } from 'rxjs';
-import { ClerkGuard } from 'src/auth/clerk.guard';
 import { ChatService } from './chat.service';
 import { SendMessageDto } from './dto/send-message-dto';
+import { ClerkAuthGuard } from 'src/auth/clerk-auth-guard';
 
 @Controller('chat')
 @ApiTags('Chat')
-@UseGuards(ClerkGuard)
+@UseGuards(ClerkAuthGuard)
 export class ChatController {
   private readonly logger = new Logger(ChatController.name);
   constructor(private readonly chatService: ChatService) {}
