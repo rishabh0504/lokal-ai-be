@@ -21,7 +21,7 @@ export class SessionService {
 
     chatSession = await this.prisma.chatSession.update({
       data: {
-        title: `Conversation ${chatSession.id}`,
+        title: `${chatSession.id}`,
       },
       where: {
         id: chatSession.id,

@@ -75,7 +75,7 @@ export class ChatService {
       const chatHistory = await this.prisma.chatMessage.findMany({
         where: { sessionId: sessionId },
         orderBy: { created_at: 'asc' },
-        take: 10,
+        take: 3,
       });
 
       let userMessage: ChatMessage;
@@ -236,7 +236,6 @@ export class ChatService {
       const chatHistory = await this.prisma.chatMessage.findMany({
         where: { sessionId: sessionId },
         orderBy: { created_at: 'asc' },
-        take: 10,
       });
 
       const chatHistoryList: Message[] = chatHistory.map(
@@ -256,9 +255,9 @@ export class ChatService {
     } catch (error: unknown) {
       this.logger.error(
         `Error fetching chat history for session ID ${sessionId}: ${
-          (error as Error).message // Type assertion
+          (error as Error).message
         }`,
-        (error as Error).stack, // Type assertion
+        (error as Error).stack,
       );
 
       if (
