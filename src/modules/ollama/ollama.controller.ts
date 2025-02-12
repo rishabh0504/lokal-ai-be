@@ -10,23 +10,6 @@ import { ListResponse } from 'ollama';
 import { OllamaService } from './ollama.service';
 import { ClerkAuthGuard } from 'src/auth/clerk-auth-guard';
 
-export interface ModelDetails {
-  parent_model: string;
-  format: string;
-  family: string;
-  families: string[];
-  parameter_size: string;
-  quantization_level: string;
-}
-export interface OllamaLLMModel {
-  name: string;
-  model: string;
-  modified_at: Date;
-  size: number;
-  digest: string;
-  details: ModelDetails;
-}
-
 @ApiTags('ai-services')
 @Controller('ai-services')
 @UseGuards(ClerkAuthGuard)

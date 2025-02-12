@@ -11,12 +11,24 @@ import { UpdateSessionDto } from './dto/update-session.dto';
 export class SessionService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createChatSessionDto: CreateSessionDto) {
-    return this.prisma.chatSession.create({
+  async create(createChatSessionDto: CreateSessionDto, userId: string) {
+    let chatSession = await this.prisma.chatSession.create({
       data: {
         ...createChatSessionDto,
+        userId,
       },
     });
+
+    chatSession = await this.prisma.chatSession.update({
+      data: {
+        title: `Conversation ${chatSession.id}`,
+      },
+      where: {
+        id: chatSession.id,
+      },
+    });
+
+    return chatSession;
   }
 
   async findAll(userId: string) {

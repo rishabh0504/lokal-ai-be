@@ -90,6 +90,19 @@ CREATE TABLE "Agent" (
 );
 
 -- CreateTable
+CREATE TABLE "User" (
+    "id" SERIAL NOT NULL,
+    "clerkId" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "firstName" TEXT,
+    "lastName" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "ToolConfig" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -115,6 +128,9 @@ CREATE INDEX "ChatMessage_sessionId_idx" ON "ChatMessage"("sessionId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "LLMModel_name_key" ON "LLMModel"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_clerkId_key" ON "User"("clerkId");
 
 -- AddForeignKey
 ALTER TABLE "ChatSession" ADD CONSTRAINT "ChatSession_agentId_fkey" FOREIGN KEY ("agentId") REFERENCES "Agent"("id") ON DELETE SET NULL ON UPDATE CASCADE;

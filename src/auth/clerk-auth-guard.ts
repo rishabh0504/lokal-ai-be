@@ -6,9 +6,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Request } from 'express'; // Import Request type from express
+import { Request } from 'express';
 
-// Define a type for the user object we'll attach to the request
 interface AuthenticatedRequest extends Request {
   user: {
     id: string;
@@ -17,29 +16,35 @@ interface AuthenticatedRequest extends Request {
 
 @Injectable()
 export class ClerkAuthGuard implements CanActivate {
-  private readonly clerkSecretKey: string; // readonly for immutability
+  private readonly clerkSecretKey: string;
 
   constructor(private readonly configService: ConfigService) {
     // readonly
     this.clerkSecretKey =
-      this.configService.get<string>('CLERK_SECRET_KEY', { infer: true }) || ''; // Provide infer: true
+      this.configService.get<string>('CLERK_SECRET_KEY', { infer: true }) || '';
     if (!this.clerkSecretKey) {
       throw new Error('CLERK_SECRET_KEY is not set in environment variables.');
     }
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request: AuthenticatedRequest = context.switchToHttp().getRequest(); // Type the request
+    const request: AuthenticatedRequest = context.switchToHttp().getRequest();
+
+    let token: string | undefined;
 
     const authHeader = request.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException(
-        'Missing or invalid Authorization header',
-      );
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else {
+      token = request.query.token as string;
     }
 
-    const token = authHeader.substring(7);
+    if (!token) {
+      throw new UnauthorizedException(
+        'Missing or invalid Authorization header or token query parameter',
+      );
+    }
 
     try {
       const decodedToken = await verifyToken(token, {

@@ -1,4 +1,4 @@
-import { Controller, UseGuards } from '@nestjs/common';
+import { Controller, Req, UseGuards } from '@nestjs/common';
 
 import {
   Body,
@@ -10,10 +10,11 @@ import {
   Post,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import { ClerkAuthGuard } from 'src/auth/clerk-auth-guard';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionDto } from './dto/update-session.dto';
 import { SessionService } from './session.service';
-import { ClerkAuthGuard } from 'src/auth/clerk-auth-guard';
+import { AuthenticatedRequest } from '../chat/dto/auth-request.dto';
 
 @ApiTags('sessions')
 @Controller('sessions')
@@ -23,21 +24,30 @@ export class SessionController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new chat session' })
-  async create(@Body() createChatSessionDto: CreateSessionDto) {
-    return this.sessionService.create(createChatSessionDto);
+  async create(
+    @Body() createChatSessionDto: CreateSessionDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const userId = req.user.id;
+    return this.sessionService.create(createChatSessionDto, userId);
   }
 
   @Get()
   @ApiOperation({ summary: 'List all chat sessions for the current user' })
-  async findAll(@Param('id') userId: string) {
+  async findAll(@Req() req: AuthenticatedRequest) {
+    const userId = req.user.id;
     return this.sessionService.findAll(userId);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a specific chat session' })
   @ApiParam({ name: 'id', description: 'Chat session ID (UUID)' })
-  async findOne(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.sessionService.findOne(id, 'userId');
+  async findOne(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const userId = req.user.id;
+    return this.sessionService.findOne(id, userId);
   }
 
   @Patch(':id')
@@ -46,14 +56,20 @@ export class SessionController {
   async update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() updateChatSessionDto: UpdateSessionDto,
+    @Req() req: AuthenticatedRequest,
   ) {
-    return this.sessionService.update(id, updateChatSessionDto, 'userId');
+    const userId = req.user.id;
+    return this.sessionService.update(id, updateChatSessionDto, userId);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a chat session' })
   @ApiParam({ name: 'id', description: 'Chat session ID (UUID)' })
-  async remove(@Param('id', new ParseUUIDPipe()) id: string) {
-    return this.sessionService.remove(id, 'userId');
+  async remove(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const userId = req.user.id;
+    return this.sessionService.remove(id, userId);
   }
 }
