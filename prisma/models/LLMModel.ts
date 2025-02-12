@@ -866,4 +866,100 @@ export const PRE_CONFIGURED_LLM_MODEL: LLMModelOmitType[] = [
     defaultPrompt:
       'You are a creative and imaginative assistant.  Craft elaborate and engaging responses, adding creative details and insights. Inject personality and flair into your answers.',
   },
+  {
+    name: 'Llama3.1:8b Basic',
+    modelName: 'llama3.1:8b',
+    version: '1.0',
+    description:
+      'Llama3.1:8b with basic settings for straightforward and concise responses.',
+    temperatureMin: 0.0,
+    temperatureMax: 0.5,
+    temperatureDefault: 0.2,
+    top_pMin: 0.0,
+    top_pMax: 0.5,
+    top_pDefault: 0.2,
+    top_kMin: 1,
+    top_kMax: 20,
+    top_kDefault: 5,
+    max_tokensMin: 1,
+    max_tokensMax: 1024, // Reduced from 2048
+    max_tokensDefault: 128, // Significantly reduced from 256
+    presence_penaltyMin: -1.0,
+    presence_penaltyMax: 0.0,
+    presence_penaltyDefault: -0.5,
+    frequency_penaltyMin: -1.0,
+    frequency_penaltyMax: 0.0,
+    frequency_penaltyDefault: -0.5,
+    repeat_penaltyMin: 1.0,
+    repeat_penaltyMax: 1.1,
+    repeat_penaltyDefault: 1.0,
+    stop_sequences: [],
+    usageCount: 0,
+    defaultPrompt:
+      "You are a helpful assistant using the Llama3.1:8b model. Provide clear and concise answers to the user's questions, being mindful of brevity and focusing on factual accuracy.",
+  },
+  {
+    name: 'Llama3.1:8b Deterministic',
+    modelName: 'llama3.1:8b',
+    version: '1.0',
+    description:
+      'Llama3.1:8b with settings optimized for highly reproducible and consistent responses.',
+    temperatureMin: 0.0,
+    temperatureMax: 0.01,
+    temperatureDefault: 0.0,
+    top_pMin: 0.0,
+    top_pMax: 0.01,
+    top_pDefault: 0.0,
+    top_kMin: 1,
+    top_kMax: 1,
+    top_kDefault: 1,
+    max_tokensMin: 1,
+    max_tokensMax: 1024, // Reduced from 2048
+    max_tokensDefault: 128, // Reduced from 256
+    presence_penaltyMin: 0.0,
+    presence_penaltyMax: 0.0,
+    presence_penaltyDefault: 0.0,
+    frequency_penaltyMin: 0.0,
+    frequency_penaltyMax: 0.0,
+    frequency_penaltyDefault: 0.0,
+    repeat_penaltyMin: 1.0,
+    repeat_penaltyMax: 1.0,
+    repeat_penaltyDefault: 1.0,
+    stop_sequences: [],
+    usageCount: 0,
+    defaultPrompt:
+      'You are a highly precise assistant using the Llama3.1:8b model. You are designed to provide the most consistent answer possible to a given query. Focus on accuracy and reproducibility. Keep your answers short and to the point.',
+  },
+  {
+    name: 'Llama3.1:8b Creative',
+    modelName: 'llama3.1:8b',
+    version: '1.0',
+    description:
+      'Llama3.1:8b with creative settings for imaginative and engaging responses.',
+    temperatureMin: 0.6, // Slightly Lowered from 0.7
+    temperatureMax: 1.0,
+    temperatureDefault: 0.8, // Lowered from 0.9
+    top_pMin: 0.6, // Slightly Lowered from 0.7
+    top_pMax: 1.0,
+    top_pDefault: 0.8, // Lowered from 0.9
+    top_kMin: 30, // Reduced from 40
+    top_kMax: 60, // Reduced from 80
+    top_kDefault: 40, // Reduced from 50
+    max_tokensMin: 1,
+    max_tokensMax: 1024, // Reduced from 2048
+    max_tokensDefault: 256, // Significantly Reduced from 512
+    presence_penaltyMin: -1.0,
+    presence_penaltyMax: 1.0,
+    presence_penaltyDefault: 0.4,
+    frequency_penaltyMin: -1.0,
+    frequency_penaltyMax: 1.0,
+    frequency_penaltyDefault: 0.4,
+    repeat_penaltyMin: 1.0,
+    repeat_penaltyMax: 1.5,
+    repeat_penaltyDefault: 1.2,
+    stop_sequences: [],
+    usageCount: 0,
+    defaultPrompt:
+      'You are a creative and imaginative assistant using the Llama3.1:8b model. Craft elaborate and engaging responses, adding creative details and insights, but be mindful of keeping your answers relatively short and focused. Inject personality and flair into your answers.',
+  },
 ];

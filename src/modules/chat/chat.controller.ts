@@ -7,6 +7,7 @@ import {
   Logger,
   Param,
   Post,
+  Req,
   Sse,
   UseGuards,
   UsePipes,
@@ -20,9 +21,11 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { Observable, catchError, map, merge, throwError } from 'rxjs';
-import { ChatService } from './chat.service';
-import { SendMessageDto } from './dto/send-message-dto';
 import { ClerkAuthGuard } from 'src/auth/clerk-auth-guard';
+import { ChatService } from './chat.service';
+import { AuthenticatedRequest } from './dto/auth-request.dto';
+import { Message } from './dto/chat.dto';
+import { SendMessageDto } from './dto/send-message-dto';
 
 @Controller('chat')
 @ApiTags('Chat')
@@ -54,8 +57,13 @@ export class ChatController {
   })
   sse(
     @Param('sessionId') sessionId: string,
+    @Req() req: AuthenticatedRequest,
   ): Observable<{ data: { content: string; done: boolean; sender: string } }> {
     this.logger.log(`SSE connection established for session: ${sessionId}`);
+
+    const userId = req.user.id;
+
+    this.logger.log(`User ID for SSE connection: ${userId}`);
 
     const userStream = this.chatService
       .getUserChatMessageStream(sessionId)
@@ -96,10 +104,14 @@ export class ChatController {
   async sendMessage(
     @Param('sessionId') sessionId: string,
     @Body() sendMessageDto: SendMessageDto,
+    @Req() req: AuthenticatedRequest,
   ): Promise<void> {
     this.logger.log(
       `Received message for session ${sessionId}: ${sendMessageDto.message}`,
     );
+
+    const userId = req.user.id;
+    this.logger.log(`User ID for message sending: ${userId}`);
     try {
       await this.chatService.sendMessage(
         sessionId,
@@ -107,6 +119,50 @@ export class ChatController {
         sendMessageDto.agentId,
       );
       this.logger.log(`Message sent to chatService for processing.`);
+    } catch (error: unknown) {
+      let errorMessage = 'An unexpected error occurred.';
+      let errorStack: string | undefined = undefined;
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        errorStack = error.stack;
+      } else {
+        errorMessage = String(error);
+      }
+      this.logger.error(
+        `Error sending message to chatService: ${errorMessage}`,
+        errorStack,
+      );
+      throw error;
+    }
+  }
+
+  @Get(':sessionId/chat-history')
+  @HttpCode(HttpStatus.OK)
+  @ApiParam({
+    name: 'sessionId',
+    type: 'string',
+    description: 'Chat Session ID',
+  })
+  @ApiOperation({
+    summary: 'Get Chat history',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Fetch Chat history',
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - Validation errors' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error' })
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async getChatHistory(
+    @Param('sessionId') sessionId: string,
+  ): Promise<Message[]> {
+    this.logger.log(
+      `Received request for getting chat history for session ${sessionId}`,
+    );
+
+    try {
+      this.logger.log(`Message sent to chatService for processing.`);
+      return await this.chatService.fetchChatHistory(sessionId);
     } catch (error: unknown) {
       let errorMessage = 'An unexpected error occurred.';
       let errorStack: string | undefined = undefined;

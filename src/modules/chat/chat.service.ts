@@ -4,17 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { ChatMessage } from '@prisma/client';
 import { Subject } from 'rxjs';
 import { PrismaService } from 'src/prisma/prisma.service';
-
-interface FormattedMessage {
-  sender: string;
-  content: string;
-}
-
-interface SSEPayload {
-  content: string;
-  sender: string;
-  done: boolean;
-}
+import { FormattedMessage, Message, SSEPayload } from './dto/chat.dto';
 
 @Injectable()
 export class ChatService {
@@ -85,7 +75,7 @@ export class ChatService {
       const chatHistory = await this.prisma.chatMessage.findMany({
         where: { sessionId: sessionId },
         orderBy: { created_at: 'asc' },
-        take: 10,
+        take: 3,
       });
 
       let userMessage: ChatMessage;
@@ -207,6 +197,81 @@ export class ChatService {
         );
       }
       throw error;
+    }
+  }
+
+  async fetchChatHistory(sessionId: string): Promise<Message[]> {
+    this.logger.log(`Starting fetching message for sessionId: ${sessionId}`);
+    try {
+      const chatSession = await this.prisma.chatSession.findUnique({
+        where: { id: sessionId },
+        include: { agent: { include: { llmModel: true } } },
+      });
+
+      if (!chatSession) {
+        this.logger.error(`Chat session not found for id: ${sessionId}`);
+        throw new Error(`Chat session not found with id: ${sessionId}`);
+      }
+
+      const agent = chatSession.agent;
+      if (!agent) {
+        this.logger.error(
+          `No agent associated with this chat session (ID: ${sessionId})`,
+        );
+        throw new Error(
+          `No agent associated with chat session ID ${sessionId}: No agent found`,
+        );
+      }
+
+      const llmModel = agent.llmModel;
+      if (!llmModel) {
+        this.logger.error(
+          `No LLM model associated with the agent (ID: ${agent.id})`,
+        );
+        throw new Error(
+          `No LLM model associated with agent ID ${agent.id}: No LLM model found`,
+        );
+      }
+
+      const chatHistory = await this.prisma.chatMessage.findMany({
+        where: { sessionId: sessionId },
+        orderBy: { created_at: 'asc' },
+      });
+
+      const chatHistoryList: Message[] = chatHistory.map(
+        (eachItem: ChatMessage) => ({
+          done: true,
+          sender: eachItem.sender,
+          // eslint-disable-next-line @typescript-eslint/no-base-to-string
+          content: String(eachItem.content || ''),
+          id: eachItem.id,
+          isAgent: eachItem.sender === 'agent',
+        }),
+      );
+      this.logger.log(
+        `Successfully fetched chat history for session ID: ${sessionId}`,
+      );
+      return chatHistoryList;
+    } catch (error: unknown) {
+      this.logger.error(
+        `Error fetching chat history for session ID ${sessionId}: ${
+          (error as Error).message
+        }`,
+        (error as Error).stack,
+      );
+
+      if (
+        error instanceof Error &&
+        error.message.includes('Chat session not found')
+      ) {
+        throw error;
+      }
+
+      throw new Error(
+        `Failed to fetch chat history for session ID ${sessionId}: ${
+          error instanceof Error ? error.message : 'An unknown error occurred' // Handle non-Error objects
+        }`,
+      );
     }
   }
 }

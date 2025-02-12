@@ -11,8 +11,4 @@ export class CreateSessionDto {
   @IsUUID()
   @ApiProperty({ description: 'Agent ID (UUID)', required: false })
   agentId: string;
-
-  @IsString()
-  @ApiProperty({ description: 'User ID string', required: false })
-  userId: string;
 }
