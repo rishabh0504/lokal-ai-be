@@ -1,5 +1,3 @@
-// prisma/seed.ts
-
 import { PrismaClient } from '@prisma/client';
 import { InputJsonValue } from '@prisma/client/runtime/library';
 import { PRE_CONFIGURED_LLM_MODEL } from './models/LLMModel';
