@@ -9,21 +9,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ModelResponse } from 'ollama';
 import { ClerkAuthGuard } from 'src/auth/clerk-auth-guard';
 import { OllamaService } from './ollama.service';
-export interface OllamaModel {
-  name: string;
-  model: string;
-  modified_at: string;
-  size: number;
-  digest: string;
-  details: {
-    parent_model: string;
-    format: string;
-    family: string | null;
-    families: string[] | null;
-    parameter_size: string;
-    quantization_level: string;
-  };
-}
+
 @ApiTags('ai-services')
 @Controller('ai-services')
 @UseGuards(ClerkAuthGuard)
