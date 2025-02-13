@@ -6,10 +6,24 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ListResponse } from 'ollama';
-import { OllamaService } from './ollama.service';
+import { ModelResponse } from 'ollama';
 import { ClerkAuthGuard } from 'src/auth/clerk-auth-guard';
-
+import { OllamaService } from './ollama.service';
+export interface OllamaModel {
+  name: string;
+  model: string;
+  modified_at: string;
+  size: number;
+  digest: string;
+  details: {
+    parent_model: string;
+    format: string;
+    family: string | null;
+    families: string[] | null;
+    parameter_size: string;
+    quantization_level: string;
+  };
+}
 @ApiTags('ai-services')
 @Controller('ai-services')
 @UseGuards(ClerkAuthGuard)
@@ -20,9 +34,12 @@ export class OllamaController {
   @ApiOperation({ summary: 'Get a list of available Ollama models' })
   @ApiResponse({ status: 200, description: 'List of available models' })
   @ApiResponse({ status: 404, description: 'Error getting models' })
-  async getAvailableModels(): Promise<ListResponse> {
+  async getAvailableModels(): Promise<ModelResponse[]> {
     try {
-      return await this.ollamaService.getAvailableModels();
+      const response: ModelResponse[] = (
+        await this.ollamaService.getAvailableModels()
+      ).models;
+      return response;
     } catch (error: unknown) {
       console.error('Error getting Ollama models:', error);
 
