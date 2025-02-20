@@ -123,7 +123,7 @@ model ToolConfig {
   output_schema         Json
   execution_type        ExecutionType
   execution_details     Json
-  code                  String?       @db.Text // For JAVASCRIPT_FUNCTION or PYTHON_FUNCTION
+  code                  String?       
   auth_type             AuthType
   auth_details          Json?
   is_safe               Boolean       @default(false)
