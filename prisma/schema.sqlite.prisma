@@ -116,31 +116,44 @@ model Agent {
 }
 
 model ToolConfig {
-  id          String   @id @default(uuid())
-  name        String
-  description String
-  type        ToolType // Enum: "API", "Python Function", "Search"
-
-  config Json? // (API key, URL, etc.)
-
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-
-  agents AgentTool[]
+  id                    String        @id @default(uuid())
+  name                  String
+  description           String
+  input_schema          Json
+  output_schema         Json
+  execution_type        ExecutionType
+  execution_details     Json
+  code                  String?       
+  auth_type             AuthType
+  auth_details          Json?
+  is_safe               Boolean       @default(false)
+  requires_confirmation Boolean       @default(false)
+  usage_count           Int           @default(0)
+  last_used             DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  agents                AgentTool[]
 }
 
 model AgentTool {
-  agentId String
-  agent   Agent  @relation(fields: [agentId], references: [id])
-
+  agentId      String
+  agent        Agent      @relation(fields: [agentId], references: [id], onDelete: Cascade)
   toolConfigId String
-  toolConfig   ToolConfig @relation(fields: [toolConfigId], references: [id])
+  toolConfig   ToolConfig @relation(fields: [toolConfigId], references: [id], onDelete: Cascade)
 
   @@id([agentId, toolConfigId])
 }
 
-enum ToolType {
-  API
-  PythonFunction
-  Search
+enum ExecutionType {
+  REST_API
+  PYTHON_FUNCTION
+  JAVASCRIPT_FUNCTION
+  CUSTOM
+}
+
+enum AuthType {
+  NONE
+  API_KEY
+  OAUTH2
+  CUSTOM
 }

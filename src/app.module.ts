@@ -7,6 +7,7 @@ import { LlmModule } from './modules/llm/llm.module';
 import { OllamaModule } from './modules/ollama/ollama.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SessionModule } from './modules/session/session.module';
+import { ToolsModule } from './modules/tools/tools.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { SessionModule } from './modules/session/session.module';
     ChatModule,
     LlmModule,
     SessionModule,
+    ToolsModule,
   ],
   controllers: [],
   providers: [ClerkAuthGuard],
