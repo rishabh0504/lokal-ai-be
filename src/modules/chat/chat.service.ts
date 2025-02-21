@@ -276,6 +276,7 @@ export class ChatService {
       await this.prisma.chatSession.update({
         where: { id: sessionId },
         data: {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           token_count: chatSession?.token_count,
         },
       });
