@@ -276,7 +276,7 @@ export class ChatService {
       await this.prisma.chatSession.update({
         where: { id: sessionId },
         data: {
-          token_count: chatSession.token_count,
+          token_count: chatSession?.token_count,
         },
       });
 
