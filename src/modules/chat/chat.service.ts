@@ -3,10 +3,10 @@ import { Ollama } from '@langchain/ollama';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ChatMessage } from '@prisma/client';
+import { encode } from 'gpt-tokenizer'; //changed gpt tokenizer
 import { Subject } from 'rxjs';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { FormattedMessage } from './dto/chat.dto';
-import { encode } from 'gpt-tokenizer'; //changed gpt tokenizer
 
 @Injectable()
 export class ChatService {
@@ -119,10 +119,12 @@ export class ChatService {
         });
       } catch (dbError: any) {
         this.logger.error(
-          `Error creating user message in DB: ${dbError.message}`,
-          dbError.stack,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          `Error creating user message in DB: ${dbError?.message}`,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          dbError?.stack,
         );
-        return;
+        return undefined;
       }
 
       const formattedHistory = chatHistory
@@ -132,6 +134,7 @@ export class ChatService {
             content: message.content as string,
           }),
         )
+
         .map(({ sender, content }) => `${sender}: ${content}`)
         .join('\n');
 
@@ -175,8 +178,10 @@ export class ChatService {
         agentMessageStream.next({ content: '', sender: 'agent', done: true }); // Signal completion
       } catch (ollamaError: any) {
         this.logger.error(
-          `Ollama stream error: ${ollamaError.message}`,
-          ollamaError.stack,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          `Ollama stream error: ${ollamaError?.message}`,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          ollamaError?.stack,
         );
         const agentMessageStream = this.getAgentChatMessageStream(sessionId);
         agentMessageStream.error(ollamaError);
@@ -205,11 +210,14 @@ export class ChatService {
         });
       } catch (dbError: any) {
         this.logger.error(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           `Error creating agent message in DB: ${dbError.message}`,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           dbError.stack,
         );
       }
     } catch (error: any) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       this.logger.error(`Error in sendMessage: ${error.message}`, error.stack);
       throw error;
     }
@@ -265,7 +273,7 @@ export class ChatService {
         `Successfully fetched chat history for session ID: ${sessionId}`,
       );
 
-      const response = await this.prisma.chatSession.update({
+      await this.prisma.chatSession.update({
         where: { id: sessionId },
         data: {
           token_count: chatSession.token_count,
@@ -275,9 +283,9 @@ export class ChatService {
       return chatHistoryList;
     } catch (error: any) {
       this.logger.error(
-        `Error fetching chat history for session ID ${sessionId}: ${
-          error.message
-        }`,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        `Error fetching chat history for session ID ${sessionId}: ${error.message}`,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         error.stack,
       );
 
