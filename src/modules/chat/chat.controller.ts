@@ -20,18 +20,32 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Observable, catchError, map, merge, throwError } from 'rxjs';
+import { catchError, map, merge, Observable, throwError } from 'rxjs';
 import { ClerkAuthGuard } from 'src/auth/clerk-auth-guard';
 import { ChatService } from './chat.service';
 import { AuthenticatedRequest } from './dto/auth-request.dto';
-import { Message } from './dto/chat.dto';
 import { SendMessageDto } from './dto/send-message-dto';
+
+interface SSEMessageEvent {
+  data: any; // More specific type
+  // optional id, type and event can be added here if needed
+}
+
+interface ChatHistoryItem {
+  done: boolean;
+  sender: string;
+  content: string;
+  id: string;
+  token_count?: number;
+  isAgent: boolean;
+}
 
 @Controller('chat')
 @ApiTags('Chat')
 @UseGuards(ClerkAuthGuard)
 export class ChatController {
   private readonly logger = new Logger(ChatController.name);
+
   constructor(private readonly chatService: ChatService) {}
 
   @Get(':sessionId/stream')
@@ -58,7 +72,7 @@ export class ChatController {
   sse(
     @Param('sessionId') sessionId: string,
     @Req() req: AuthenticatedRequest,
-  ): Observable<{ data: { content: string; done: boolean; sender: string } }> {
+  ): Observable<SSEMessageEvent> {
     this.logger.log(`SSE connection established for session: ${sessionId}`);
 
     const userId = req.user.id;
@@ -67,15 +81,53 @@ export class ChatController {
 
     const userStream = this.chatService
       .getUserChatMessageStream(sessionId)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       .pipe(map((message) => ({ data: message })));
 
     const agentStream = this.chatService
       .getAgentChatMessageStream(sessionId)
-      .pipe(map((message) => ({ data: message })));
+
+      .pipe(
+        map((message: string) => ({ data: message })),
+        catchError((err: unknown) => {
+          let errorMessage = 'An unknown error occurred';
+          let errorStack: string | undefined;
+
+          if (err instanceof Error) {
+            errorMessage = err.message;
+            errorStack = err.stack;
+          } else if (typeof err === 'string') {
+            errorMessage = err;
+          } else {
+            errorMessage = JSON.stringify(err); // Safely stringify
+          }
+
+          this.logger.error(
+            `Error in agent stream: ${errorMessage}`,
+            errorStack,
+          );
+
+          return throwError(() => ({
+            data: { error: errorMessage, done: true, sender: 'agent' },
+          })); // Send error to client
+        }),
+      );
 
     return merge(userStream, agentStream).pipe(
-      catchError((err: Error) => {
-        this.logger.error(`Error in SSE stream: ${err.message}`, err.stack);
+      catchError((err: unknown) => {
+        let errorMessage = 'An unexpected error occurred.';
+        let errorStack: string | undefined;
+
+        if (err instanceof Error) {
+          errorMessage = err.message;
+          errorStack = err.stack;
+        } else if (typeof err === 'string') {
+          errorMessage = err;
+        } else {
+          errorMessage = JSON.stringify(err);
+        }
+
+        this.logger.error(`Error in SSE stream: ${errorMessage}`, errorStack);
         return throwError(() => new Error('SSE stream error'));
       }),
     );
@@ -121,18 +173,19 @@ export class ChatController {
       this.logger.log(`Message sent to chatService for processing.`);
     } catch (error: unknown) {
       let errorMessage = 'An unexpected error occurred.';
-      let errorStack: string | undefined = undefined;
+      let errorStack: string | undefined;
+
       if (error instanceof Error) {
         errorMessage = error.message;
         errorStack = error.stack;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
       } else {
-        errorMessage = String(error);
+        errorMessage = JSON.stringify(error);
       }
-      this.logger.error(
-        `Error sending message to chatService: ${errorMessage}`,
-        errorStack,
-      );
-      throw error;
+
+      this.logger.error(`Error sending message: ${errorMessage}`, errorStack);
+      throw new Error(errorMessage); // Rethrow as an Error object
     }
   }
 
@@ -155,28 +208,33 @@ export class ChatController {
   @UsePipes(new ValidationPipe({ transform: true }))
   async getChatHistory(
     @Param('sessionId') sessionId: string,
-  ): Promise<Message[]> {
+  ): Promise<ChatHistoryItem[]> {
     this.logger.log(
       `Received request for getting chat history for session ${sessionId}`,
     );
 
     try {
       this.logger.log(`Message sent to chatService for processing.`);
+      // eslint-disable-next-line  @typescript-eslint/no-unsafe-return
       return await this.chatService.fetchChatHistory(sessionId);
     } catch (error: unknown) {
       let errorMessage = 'An unexpected error occurred.';
-      let errorStack: string | undefined = undefined;
+      let errorStack: string | undefined;
+
       if (error instanceof Error) {
         errorMessage = error.message;
         errorStack = error.stack;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
       } else {
-        errorMessage = String(error);
+        errorMessage = JSON.stringify(error);
       }
+
       this.logger.error(
         `Error sending message to chatService: ${errorMessage}`,
         errorStack,
       );
-      throw error;
+      throw new Error(errorMessage); // Rethrow as an Error object
     }
   }
 }

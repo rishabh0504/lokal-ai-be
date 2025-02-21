@@ -22,6 +22,9 @@ model ChatSession {
 
   agentId String? //Optional for entire session
   agent   Agent?  @relation(fields: [agentId], references: [id])
+
+  token_count Int?   @default(0) // Total token count for the session
+  cost        Float? @default(0) // Total cost for the session
 }
 
 model ChatMessage {
@@ -36,10 +39,6 @@ model ChatMessage {
 
   sessionId String
   session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade) //Cascade deletes the Message if seesion is deleted
-
-  token_count Int?
-  cost        Float?
-  latency     Int?
 
   agentId String?
   agent   Agent?  @relation(fields: [agentId], references: [id])
