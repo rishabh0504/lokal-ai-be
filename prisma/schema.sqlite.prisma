@@ -7,6 +7,8 @@ datasource db {
   url      = "file:./dev.db" // Or ":memory:" for in-memory
 }
 
+
+
 model ChatSession {
   id         String    @id @default(uuid())
   created_at DateTime  @default(now())
@@ -122,7 +124,7 @@ model ToolConfig {
   output_schema         Json
   execution_type        ExecutionType
   execution_details     Json
-  code                  String?       
+  code                  String?      
   auth_type             AuthType
   auth_details          Json?
   is_safe               Boolean       @default(false)
