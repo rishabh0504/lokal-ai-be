@@ -66,6 +66,7 @@ export class AgentService {
 
   async updateAgent(id: string, data: AgentDto): Promise<AgentResponseDto> {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { llmModelId, toolIds, ...agentData } = data;
 
       const agent = await this.prisma.agent.update({
