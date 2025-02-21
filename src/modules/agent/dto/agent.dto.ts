@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsNumber,
   IsUUID,
+  IsArray,
 } from 'class-validator';
 
 export class AgentDto {
@@ -68,6 +69,11 @@ export class AgentDto {
   @IsString()
   @IsOptional()
   description: string;
+
+  @ApiProperty({ description: 'Tools to be regsitered', required: false })
+  @IsArray()
+  @IsOptional()
+  toolIds?: string[];
 }
 
 export class AgentResponseDto extends AgentDto {

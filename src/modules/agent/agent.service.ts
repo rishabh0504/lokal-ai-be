@@ -14,7 +14,16 @@ export class AgentService {
 
   async createAgent(agent: AgentDto): Promise<Agent> {
     try {
-      return await this.prisma.agent.create({ data: agent });
+      const { toolIds, ...agentData } = agent;
+      const agentCreated = await this.prisma.agent.create({ data: agentData });
+      if (Array.isArray(toolIds) && toolIds.length > 0) {
+        const toolConfigs = toolIds.map((toolId) => ({
+          agentId: agentCreated.id,
+          toolConfigId: toolId,
+        }));
+        await this.prisma.agentTool.createMany({ data: toolConfigs });
+      }
+      return agentCreated;
     } catch (error) {
       console.error('Error creating agent:', error);
       throw new InternalServerErrorException('Failed to create agent');
@@ -57,9 +66,18 @@ export class AgentService {
 
   async updateAgent(id: string, data: AgentDto): Promise<AgentResponseDto> {
     try {
+      const { llmModelId, toolIds, ...agentData } = data;
+
       const agent = await this.prisma.agent.update({
         where: { id },
-        data,
+        data: {
+          ...agentData,
+          llmModel: {
+            connect: {
+              id: llmModelId,
+            },
+          },
+        },
       });
 
       if (!agent) {
