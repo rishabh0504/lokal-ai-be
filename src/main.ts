@@ -1,10 +1,9 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import * as cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { CORS_CONFIG } from './utils/common.constant';
-
+import cookieParser from 'cookie-parser';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(
@@ -18,13 +17,13 @@ async function bootstrap() {
   app.use(cookieParser());
 
   const config = new DocumentBuilder()
-    .setTitle('Lokal-AI')
-    .setDescription('API documentation for Lokal-AI')
-    .setVersion('1.0')
-    .addTag('Lokal-AI')
+    .setTitle(process.env.APP_TITLE || '')
+    .setDescription(process.env.APP_DESCRIPTION || '')
+    .setVersion(process.env.APP_VERSION || '')
+    .addTag(process.env.APP_TAG || '')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
-  await app.listen(3001);
+  SwaggerModule.setup(process.env.APP_SWAGGER_APP_PREFIX || '', app, document);
+  await app.listen(process.env.APP_PORT || '');
 }
 bootstrap();

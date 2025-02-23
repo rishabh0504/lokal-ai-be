@@ -9,9 +9,12 @@ import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 
 interface AuthenticatedRequest extends Request {
+  // Correctly extend Request
   user: {
     id: string;
   };
+  headers: any;
+  query: any;
 }
 
 @Injectable()

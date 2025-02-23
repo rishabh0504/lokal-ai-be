@@ -10,9 +10,10 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
-    "start:dev": "nest start --watch",
+    "start:dev": "cross-env APP_PORT=3001 nest start --watch",
+    "start:local": "cross-env APP_PORT=3001 npm run start:dev",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "start:prod": "node dist/src/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
@@ -25,7 +26,9 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:restart": "npm run prisma:clean && npx prisma format && npx prisma migrate dev --name init && npm run prisma:generate && npm run prisma:seed",
     "prisma:reset": "npm run prisma:clean && npm run prisma:restart",
-    "prepare": "husky"
+    "prepare": "husky install",
+    "prepare:uninstall": "husky uninstall",
+    "prepare:force": "git config core.hooksPath .husky"
   },
   "dependencies": {
     "@clerk/clerk-sdk-node": "^5.1.6",
@@ -66,6 +69,7 @@
     "@types/jest": "^29.5.14",
     "@types/node": "^22.13.0",
     "@types/supertest": "^6.0.2",
+    "cross-env": "^7.0.3",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

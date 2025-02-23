@@ -22,10 +22,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          cache: 'yarn'
+          cache: 'pnpm'
 
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Setup Prisma (Conditional Schema and DATABASE_URL)
         run: |
@@ -43,24 +43,24 @@ jobs:
             cp "$SCHEMA_FILE" prisma/schema.prisma # Copy SQLite schema
           fi
 
-          yarn prisma:format
-          yarn prisma:generate
+          pnpm prisma:format
+          pnpm prisma:generate
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }} # Production DB URL
           NODE_ENV: production
 
       - name: Lint and Format
         run: |
-          yarn lint
-          yarn format:check
+          pnpm lint
+          pnpm format:check
 
       - name: Test
-        run: yarn test
+        run: pnpm test
         env:
           DATABASE_URL: 'file:./test.db'
 
       - name: Build
-        run: yarn build
+        run: pnpm build
         env:
           NODE_ENV: production
           DATABASE_URL: 'file:./prod.db'

@@ -1,11 +1,12 @@
 import { Ollama } from '@langchain/ollama';
-
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ChatMessage } from '@prisma/client';
-import { encode } from 'gpt-tokenizer'; //changed gpt tokenizer
+import { encode } from 'gpt-tokenizer';
 import { Subject } from 'rxjs';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { TOOL_EXECUTORS } from '../common/common.module';
+import { ToolExecutor } from '../common/tools/executors/tool-executor';
 import { FormattedMessage } from './dto/chat.dto';
 
 @Injectable()
@@ -18,11 +19,17 @@ export class ChatService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
+    @Inject(TOOL_EXECUTORS) private readonly toolExecutors: ToolExecutor[],
   ) {
-    this.ollamaBaseUrl =
-      this.configService.get<string>('OLLAMA_HOST') || 'http://localhost:11434';
+    try {
+      const ollamaHost = this.configService.get<string>('OLLAMA_HOST');
+      if (ollamaHost) {
+        this.ollamaBaseUrl = ollamaHost;
+      } else {
+        throw new Error('OLLAMA_HOST is missing');
+      }
+    } catch (error) {}
   }
-
   getUserChatMessageStream(sessionId: string): Subject<any> {
     if (!this.userMessageStreams[sessionId]) {
       this.userMessageStreams[sessionId] = new Subject<any>();
@@ -43,8 +50,21 @@ export class ChatService {
       return encoded.length;
     } catch (error) {
       this.logger.error('Error tokenizing text:', error);
-      return 0; // Or throw the error if you want to handle it upstream
+      return 0;
     }
+  }
+
+  private getToolExecutor(toolConfig: any): ToolExecutor {
+    const executor = this.toolExecutors.find((e) =>
+      e.supports(toolConfig.execution_type),
+    );
+
+    if (!executor) {
+      throw new Error(
+        `No ToolExecutor found for execution type: ${toolConfig.execution_type}`,
+      );
+    }
+    return executor;
   }
 
   async sendMessage(
@@ -59,7 +79,18 @@ export class ChatService {
     try {
       const chatSession = await this.prisma.chatSession.findUnique({
         where: { id: sessionId },
-        include: { agent: { include: { llmModel: true } } },
+        include: {
+          agent: {
+            include: {
+              llmModel: true,
+              AgentTool: {
+                include: {
+                  toolConfig: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       if (!chatSession) {
@@ -71,16 +102,22 @@ export class ChatService {
       if (!agent) {
         this.logger.error(
           `No agent associated with this chat session (ID: ${sessionId})`,
+          `No token count`,
         );
-        throw new Error('No agent associated with this chat session.');
+        throw new Error(
+          `No agent associated with chat session ID ${sessionId}: No agent found`,
+        );
       }
 
       const llmModel = agent.llmModel;
       if (!llmModel) {
         this.logger.error(
           `No LLM model associated with the agent (ID: ${agent.id})`,
+          `No LLM model associated with the agent.`,
         );
-        throw new Error('No LLM model associated with the agent.');
+        throw new Error(
+          `No LLM model associated with agent ID ${agent.id}: No LLM model found`,
+        );
       }
 
       const chatHistory = await this.prisma.chatMessage.findMany({
@@ -101,7 +138,6 @@ export class ChatService {
           },
         });
 
-        //Update the tokens
         await this.prisma.chatSession.update({
           where: { id: sessionId },
           data: {
@@ -119,9 +155,7 @@ export class ChatService {
         });
       } catch (dbError: any) {
         this.logger.error(
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           `Error creating user message in DB: ${dbError?.message}`,
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           dbError?.stack,
         );
         return undefined;
@@ -134,14 +168,11 @@ export class ChatService {
             content: message.content as string,
           }),
         )
-
         .map(({ sender, content }) => `${sender}: ${content}`)
         .join('\n');
 
       this.logger.log(`Creating prompt for LLM.`);
-      const prompt = `${agent.prompt}.\nHistory: ${formattedHistory}\nUser: ${messageContent}\nAssistant:`;
-
-      this.logger.log(`Calling Ollama API with model: ${llmModel.modelName}`);
+      const prompt = `${agent.prompt}\nHistory: ${formattedHistory}\nUser: ${messageContent}\nAssistant:`;
 
       const model = new Ollama({
         baseUrl: this.ollamaBaseUrl,
@@ -175,21 +206,53 @@ export class ChatService {
           });
         }
 
-        agentMessageStream.next({ content: '', sender: 'agent', done: true }); // Signal completion
+        agentMessageStream.next({ content: '', sender: 'agent', done: true });
       } catch (ollamaError: any) {
         this.logger.error(
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           `Ollama stream error: ${ollamaError?.message}`,
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           ollamaError?.stack,
         );
         const agentMessageStream = this.getAgentChatMessageStream(sessionId);
         agentMessageStream.error(ollamaError);
         throw ollamaError;
       }
-      const agentTokenCount = this.getTokenCount(fullResponse); //Add agentTokenCount
 
-      //Update the tokens for the new message that got sent
+      // Tool execution logic
+      let match;
+      const toolRegex = /(\w+):\s*(\{.*\})/;
+      while ((match = fullResponse.match(toolRegex))) {
+        const toolName = match[1];
+        const toolArgsString = match[2];
+        fullResponse = fullResponse.replace(match[0], '').trim();
+
+        const agentTool = agent.AgentTool.find(
+          (at) => at.toolConfig.name.toLowerCase() === toolName.toLowerCase(),
+        );
+
+        if (agentTool) {
+          const toolConfig = agentTool.toolConfig;
+
+          try {
+            let toolArgs = {};
+            if (toolArgsString) {
+              toolArgs = JSON.parse(toolArgsString);
+            }
+
+            const toolExecutor = this.getToolExecutor(toolConfig);
+            const result = await toolExecutor.execute(toolConfig, toolArgs);
+            fullResponse += `\n${toolName}_result: ${JSON.stringify(result)}`;
+          } catch (error) {
+            this.logger.error(`Error executing tool ${toolName}: ${error}`);
+            fullResponse += `\nError executing tool ${toolName}: ${error}`;
+          }
+        } else {
+          this.logger.warn(`Tool ${toolName} not found for this agent.`);
+          fullResponse += `\nTool ${toolName} not found.`;
+        }
+      }
+
+      const agentTokenCount = this.getTokenCount(fullResponse);
+
       await this.prisma.chatSession.update({
         where: { id: sessionId },
         data: {
@@ -210,20 +273,17 @@ export class ChatService {
         });
       } catch (dbError: any) {
         this.logger.error(
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           `Error creating agent message in DB: ${dbError.message}`,
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           dbError.stack,
         );
       }
     } catch (error: any) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       this.logger.error(`Error in sendMessage: ${error.message}`, error.stack);
       throw error;
     }
   }
+
   async fetchChatHistory(sessionId: string): Promise<any[]> {
-    //Type the  Promise to be any
     this.logger.log(`Starting fetching message for sessionId: ${sessionId}`);
     try {
       const chatSession = await this.prisma.chatSession.findUnique({
@@ -251,6 +311,7 @@ export class ChatService {
       if (!llmModel) {
         this.logger.error(
           `No LLM model associated with the agent (ID: ${agent.id})`,
+          `No LLM model associated with the agent.`,
         );
         throw new Error(
           `No LLM model associated with agent ID ${agent.id}: No LLM model found`,
@@ -283,9 +344,7 @@ export class ChatService {
       return chatHistoryList;
     } catch (error: any) {
       this.logger.error(
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         `Error fetching chat history for session ID ${sessionId}: ${error.message}`,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         error.stack,
       );
 

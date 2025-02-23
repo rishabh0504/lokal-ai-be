@@ -47,6 +47,7 @@ export class AgentService {
   async getAgentById(id: string): Promise<AgentResponseDto> {
     try {
       const agent = await this.prisma.agent.findUnique({ where: { id } });
+
       if (!agent) {
         throw new NotFoundException(`Agent with ID ${id} not found`);
       }
