@@ -17,13 +17,13 @@ async function bootstrap() {
   app.use(cookieParser());
 
   const config = new DocumentBuilder()
-    .setTitle('Lokal-AI')
-    .setDescription('API documentation for Lokal-AI')
-    .setVersion('1.0')
-    .addTag('Lokal-AI')
+    .setTitle(process.env.APP_TITLE || '')
+    .setDescription(process.env.APP_DESCRIPTION || '')
+    .setVersion(process.env.APP_VERSION || '')
+    .addTag(process.env.APP_TAG || '')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
-  await app.listen(3001);
+  SwaggerModule.setup(process.env.APP_VERSION || '', app, document);
+  await app.listen(3000);
 }
 bootstrap();

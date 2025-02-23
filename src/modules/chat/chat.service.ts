@@ -1,13 +1,13 @@
-import { Injectable, Logger, Inject } from '@nestjs/common'; // Import Inject
+import { Ollama } from '@langchain/ollama';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ChatMessage } from '@prisma/client';
 import { encode } from 'gpt-tokenizer';
 import { Subject } from 'rxjs';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { FormattedMessage } from './dto/chat.dto';
-import { Ollama } from '@langchain/ollama';
-import { ToolExecutor } from '../common/tools/executors/tool-executor';
 import { TOOL_EXECUTORS } from '../common/common.module';
+import { ToolExecutor } from '../common/tools/executors/tool-executor';
+import { FormattedMessage } from './dto/chat.dto';
 
 @Injectable()
 export class ChatService {
@@ -21,8 +21,14 @@ export class ChatService {
     private readonly configService: ConfigService,
     @Inject(TOOL_EXECUTORS) private readonly toolExecutors: ToolExecutor[],
   ) {
-    this.ollamaBaseUrl =
-      this.configService.get<string>('OLLAMA_HOST') || 'http://localhost:11434';
+    try {
+      const ollamaHost = this.configService.get<string>('OLLAMA_HOST');
+      if (ollamaHost) {
+        this.ollamaBaseUrl = ollamaHost;
+      } else {
+        throw new Error('OLLAMA_HOST is missing');
+      }
+    } catch (error) {}
   }
   getUserChatMessageStream(sessionId: string): Subject<any> {
     if (!this.userMessageStreams[sessionId]) {
