@@ -10,7 +10,7 @@ async function main() {
   for (const modelData of PRE_CONFIGURED_LLM_MODEL) {
     try {
       await prisma.lLMModel.upsert({
-        where: { name: modelData.name },
+        where: { name: modelData.name }, // Unique identifier for the record
         update: {
           ...modelData,
           stop_sequences: modelData.stop_sequences

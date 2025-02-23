@@ -8,6 +8,7 @@ import { OllamaModule } from './modules/ollama/ollama.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SessionModule } from './modules/session/session.module';
 import { ToolsModule } from './modules/tools/tools.module';
+import { LokalAICommonModule } from './modules/common/common.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { ToolsModule } from './modules/tools/tools.module';
     LlmModule,
     SessionModule,
     ToolsModule,
+    LokalAICommonModule,
   ],
   controllers: [],
   providers: [ClerkAuthGuard],

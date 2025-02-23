@@ -1,23 +1,27 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "target": "ES2022", // Or a later target
+    "module": "NodeNext", // or "ESNext"
+    "moduleResolution": "NodeNext",
+    "esModuleInterop": true,
     "declaration": true,
-    "removeComments": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "allowSyntheticDefaultImports": true,
-    "target": "ES2021",
     "sourceMap": true,
     "outDir": "./dist",
-    "moduleResolution": "node",
-    "typeRoots": ["node_modules/@types"],
     "baseUrl": "./",
-    "incremental": true,
+    "lib": ["ES2022", "DOM"], // Adjust ES2022
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
     "skipLibCheck": true,
-    "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
-    "noImplicitAny": false,
-    "strictBindCallApply": false,
-    "noFallthroughCasesInSwitch": false
-  }
+    "resolveJsonModule": true,
+    "strict": true,
+    "alwaysStrict": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "strictPropertyInitialization": false,
+    "useUnknownInCatchVariables": false,
+    "typeRoots": ["node_modules/@types"]
+  },
+  "exclude": ["node_modules", "dist"]
 }

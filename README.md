@@ -204,3 +204,10 @@ This is crucial for a good user experience. Here's how to handle it:
 - **Monitoring:** Implement monitoring to track the performance of your application and identify potential problems. Use tools like Prometheus and Grafana.
 - **Ollama Updates:** Stay up-to-date with the latest versions of Ollama and update your application accordingly. Be aware of any breaking changes in the Ollama API.
 - **Multi-Tenancy:** If you plan to support multiple users, you'll need to implement multi-tenancy. This involves isolating user data and resources. Make sure each user only has access to their own data and configurations.
+
+Important Considerations:
+
+Prisma Migrations/Seeds: You'll likely need to run Prisma migrations and seeds inside the container. You can do this by running commands like:
+
+docker-compose exec app npm run prisma:migrate dev --name <migration_name>
+docker-compose exec app npm run prisma:seed
