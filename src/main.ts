@@ -23,7 +23,7 @@ async function bootstrap() {
     .addTag(process.env.APP_TAG || '')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup(process.env.APP_VERSION || '', app, document);
+  SwaggerModule.setup(process.env.APP_SWAGGER_APP_PREFIX || '', app, document);
   await app.listen(3000);
 }
 bootstrap();
