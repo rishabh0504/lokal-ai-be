@@ -1,7 +1,7 @@
 import { Ollama } from '@langchain/ollama';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { ChatMessage } from '@prisma/client';
+import { ChatMessage, ToolConfig } from '@prisma/client';
 import { encode } from 'gpt-tokenizer';
 import { Subject } from 'rxjs';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -28,7 +28,10 @@ export class ChatService {
       } else {
         throw new Error('OLLAMA_HOST is missing');
       }
-    } catch (error) {}
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error: unknown) {
+      throw new Error('OLLAMA_HOST is missing');
+    }
   }
   getUserChatMessageStream(sessionId: string): Subject<any> {
     if (!this.userMessageStreams[sessionId]) {
@@ -54,14 +57,14 @@ export class ChatService {
     }
   }
 
-  private getToolExecutor(toolConfig: any): ToolExecutor {
-    const executor = this.toolExecutors.find((e) =>
+  private getToolExecutor(toolConfig: ToolConfig): ToolExecutor {
+    const executor = this.toolExecutors.find((e: ToolExecutor) =>
       e.supports(toolConfig.execution_type),
     );
 
     if (!executor) {
       throw new Error(
-        `No ToolExecutor found for execution type: ${toolConfig.execution_type}`,
+        `No ToolExecutor found for execution type: ${toolConfig?.execution_type}`,
       );
     }
     return executor;
@@ -153,11 +156,17 @@ export class ChatService {
           sender: chatSession.userId,
           done: true,
         });
-      } catch (dbError: any) {
-        this.logger.error(
-          `Error creating user message in DB: ${dbError?.message}`,
-          dbError?.stack,
-        );
+      } catch (dbError: unknown) {
+        if (dbError instanceof Error) {
+          this.logger.error(
+            `Error creating user message in DB: ${dbError.message}`,
+            dbError.stack,
+          );
+        } else {
+          this.logger.error(
+            `Error creating user message in DB: ${String(dbError)}`,
+          );
+        }
         return undefined;
       }
 
@@ -207,14 +216,21 @@ export class ChatService {
         }
 
         agentMessageStream.next({ content: '', sender: 'agent', done: true });
-      } catch (ollamaError: any) {
-        this.logger.error(
-          `Ollama stream error: ${ollamaError?.message}`,
-          ollamaError?.stack,
-        );
-        const agentMessageStream = this.getAgentChatMessageStream(sessionId);
-        agentMessageStream.error(ollamaError);
-        throw ollamaError;
+      } catch (ollamaError: unknown) {
+        if (ollamaError instanceof Error) {
+          this.logger.error(
+            `Ollama stream error: ${ollamaError.message}`,
+            ollamaError.stack,
+          );
+          const agentMessageStream = this.getAgentChatMessageStream(sessionId);
+          agentMessageStream.error(ollamaError);
+          throw ollamaError;
+        } else {
+          this.logger.error(`Ollama stream error: ${String(ollamaError)}`);
+          const agentMessageStream = this.getAgentChatMessageStream(sessionId);
+          agentMessageStream.error(new Error(String(ollamaError))); // Wrap in Error
+          throw new Error(String(ollamaError)); // Re-throw as Error
+        }
       }
 
       // Tool execution logic
@@ -235,15 +251,26 @@ export class ChatService {
           try {
             let toolArgs = {};
             if (toolArgsString) {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
               toolArgs = JSON.parse(toolArgsString);
             }
 
-            const toolExecutor = this.getToolExecutor(toolConfig);
+            const toolExecutor: ToolExecutor = this.getToolExecutor(toolConfig);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             const result = await toolExecutor.execute(toolConfig, toolArgs);
             fullResponse += `\n${toolName}_result: ${JSON.stringify(result)}`;
-          } catch (error) {
-            this.logger.error(`Error executing tool ${toolName}: ${error}`);
-            fullResponse += `\nError executing tool ${toolName}: ${error}`;
+          } catch (error: unknown) {
+            if (error instanceof Error) {
+              this.logger.error(
+                `Error executing tool ${toolName}: ${error.message}`,
+              );
+              fullResponse += `\nError executing tool ${toolName}: ${error.message}`;
+            } else {
+              this.logger.error(
+                `Error executing tool ${toolName}: ${String(error)}`,
+              );
+              fullResponse += `\nError executing tool ${toolName}: ${String(error)}`;
+            }
           }
         } else {
           this.logger.warn(`Tool ${toolName} not found for this agent.`);
@@ -271,15 +298,29 @@ export class ChatService {
             agentId: agentId,
           },
         });
-      } catch (dbError: any) {
-        this.logger.error(
-          `Error creating agent message in DB: ${dbError.message}`,
-          dbError.stack,
-        );
+      } catch (dbError: unknown) {
+        if (dbError instanceof Error) {
+          this.logger.error(
+            `Error creating agent message in DB: ${dbError.message}`,
+            dbError.stack,
+          );
+        } else {
+          this.logger.error(
+            `Error creating agent message in DB: ${String(dbError)}`,
+          );
+        }
       }
-    } catch (error: any) {
-      this.logger.error(`Error in sendMessage: ${error.message}`, error.stack);
-      throw error;
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(
+          `Error in sendMessage: ${error.message}`,
+          error.stack,
+        );
+        throw error;
+      } else {
+        this.logger.error(`Error in sendMessage: ${String(error)}`);
+        throw new Error(String(error)); // Re-throw as Error
+      }
     }
   }
 
@@ -342,24 +383,30 @@ export class ChatService {
       });
 
       return chatHistoryList;
-    } catch (error: any) {
-      this.logger.error(
-        `Error fetching chat history for session ID ${sessionId}: ${error.message}`,
-        error.stack,
-      );
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        this.logger.error(
+          `Error fetching chat history for session ID ${sessionId}: ${error.message}`,
+          error.stack,
+        );
 
-      if (
-        error instanceof Error &&
-        error.message.includes('Chat session not found')
-      ) {
-        throw error;
+        if (error.message.includes('Chat session not found')) {
+          throw error;
+        }
+
+        throw new Error(
+          `Failed to fetch chat history for session ID ${sessionId}: ${error.message}`,
+        );
+      } else {
+        const errorMessage = String(error);
+        this.logger.error(
+          `Error fetching chat history for session ID ${sessionId}: ${errorMessage}`,
+        );
+
+        throw new Error(
+          `Failed to fetch chat history for session ID ${sessionId}: ${errorMessage}`,
+        );
       }
-
-      throw new Error(
-        `Failed to fetch chat history for session ID ${sessionId}: ${
-          error instanceof Error ? error.message : 'An unknown error occurred'
-        }`,
-      );
     }
   }
 }

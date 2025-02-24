@@ -3,6 +3,7 @@ import * as dns from 'dns';
 import { ListResponse, Ollama } from 'ollama';
 import { promisify } from 'util';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const dnsLookup = promisify(dns.lookup);
 
 @Injectable()

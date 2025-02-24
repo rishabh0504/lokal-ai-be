@@ -1,4 +1,6 @@
+import { ToolConfig } from '@prisma/client';
+
 export interface ToolExecutor {
   supports(executionType: string): boolean;
-  execute(toolConfig: any, input: any): Promise<any>;
+  execute(toolConfig: ToolConfig, input: any): Promise<any>;
 }
