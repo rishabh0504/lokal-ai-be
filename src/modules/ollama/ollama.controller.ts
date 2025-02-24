@@ -12,7 +12,7 @@ import { OllamaService } from './ollama.service';
 
 @ApiTags('ai-services')
 @Controller('ai-services')
-// @UseGuards(ClerkAuthGuard)
+@UseGuards(ClerkAuthGuard)
 export class OllamaController {
   constructor(private readonly ollamaService: OllamaService) {}
 
