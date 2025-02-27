@@ -9,6 +9,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { SessionModule } from './modules/session/session.module';
 import { ToolsModule } from './modules/tools/tools.module';
 import { LokalAICommonModule } from './modules/common/common.module';
+import { APP_FILTER, HttpAdapterHost } from '@nestjs/core';
+import { AllExceptionsFilter } from './exception.filter';
 
 @Module({
   imports: [
@@ -26,6 +28,14 @@ import { LokalAICommonModule } from './modules/common/common.module';
     LokalAICommonModule,
   ],
   controllers: [],
-  providers: [ClerkAuthGuard],
+  providers: [
+    ClerkAuthGuard,
+    {
+      provide: APP_FILTER,
+      useFactory: (httpAdapterHost: HttpAdapterHost) =>
+        new AllExceptionsFilter(httpAdapterHost),
+      inject: [HttpAdapterHost],
+    },
+  ],
 })
 export class AppModule {}

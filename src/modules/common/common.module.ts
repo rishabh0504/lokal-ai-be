@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
 import { JavascriptExecutor } from './tools/executors/js-executor';
 import { PythonToolExecutor } from './tools/executors/python-tool-executor';
+import { TasksService } from './schedular/task-schedular.service';
 
 export const TOOL_EXECUTORS = 'TOOL_EXECUTORS';
 
@@ -9,6 +10,7 @@ export const TOOL_EXECUTORS = 'TOOL_EXECUTORS';
   providers: [
     PythonToolExecutor,
     JavascriptExecutor,
+    TasksService,
     {
       provide: TOOL_EXECUTORS,
       useFactory: (

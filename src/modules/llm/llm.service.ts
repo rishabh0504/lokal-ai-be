@@ -81,7 +81,7 @@ export class LLMService {
       } = { ...data };
       if (data.stop_sequences) {
         try {
-          const parsed = JSON.parse(data.stop_sequences) as InputJsonValue; // Explicit assertion
+          const parsed = JSON.parse(data.stop_sequences) as InputJsonValue;
           updateData.stop_sequences = parsed;
         } catch (err) {
           console.error('Invalid JSON format for stop_sequences', err);

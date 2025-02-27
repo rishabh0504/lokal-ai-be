@@ -46,6 +46,29 @@ model ChatMessage {
   @@index([sessionId])
 }
 
+enum LLMModelSetupStatus {
+  NOT_INITIALIZED
+  PENDING // Task queued
+  IN_PROGRESS
+  PAUSE // Potentially for pausing downloads
+  RETRYING
+  FAILED
+  ROLLING_BACK // If attempting to undo a failed install
+  CANCELED // User requested cancellation
+  NEEDS_ATTENTION //Requires Human Input
+  COMPLETED
+}
+
+model LLMModelSetupProcess {
+  id         String              @id @default(uuid())
+  model      String
+  provider   String?
+  status     LLMModelSetupStatus @default(NOT_INITIALIZED)
+  created_at DateTime            @default(now())
+  updated_at DateTime            @updatedAt
+  message    String? // Store error messages or status details
+}
+
 model LLMModel {
   id            String  @id @default(uuid())
   name          String  @unique
@@ -155,4 +178,18 @@ enum AuthType {
   API_KEY
   OAUTH2
   CUSTOM
+}
+
+model ScheduledTask {
+  id          String   @id @default(uuid())
+  name        String
+  cron        String
+  task        String
+  active      Boolean  @default(true)
+  description String?
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([cron])
 }
