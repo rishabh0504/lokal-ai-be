@@ -26,10 +26,13 @@ export class OllamaInstallProcessor {
       );
     } catch (error: any) {
       this.logger.error(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         `Installation of model ${modelName} failed: ${error.message} (Job ID: ${job.id})`,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         error.stack,
       );
       throw new Error(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         `Installation failed for model ${modelName}: ${error.message}`,
       );
     }

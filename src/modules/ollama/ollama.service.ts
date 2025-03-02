@@ -3,7 +3,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as dns from 'dns';
 import { ListResponse, Ollama } from 'ollama';
 import { promisify } from 'util';
-import { ModelInstallResponse } from './dto/model.dto';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const dnsLookup = promisify(dns.lookup);
