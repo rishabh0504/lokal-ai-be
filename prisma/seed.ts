@@ -1,7 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import { LLMModel, PrismaClient } from '@prisma/client';
 import { InputJsonValue } from '@prisma/client/runtime/library';
-import { PRE_CONFIGURED_LLM_MODEL } from './models/LLMModel';
 
+type LLMModelOmitType = Omit<LLMModel, 'id' | 'created_at' | 'updated_at'>;
+
+const PRE_CONFIGURED_LLM_MODEL: LLMModelOmitType[] = [];
 const prisma = new PrismaClient();
 
 async function main() {
@@ -10,7 +12,7 @@ async function main() {
   for (const modelData of PRE_CONFIGURED_LLM_MODEL) {
     try {
       await prisma.lLMModel.upsert({
-        where: { name: modelData.name }, // Unique identifier for the record
+        where: { name: modelData.name },
         update: {
           ...modelData,
           stop_sequences: modelData.stop_sequences

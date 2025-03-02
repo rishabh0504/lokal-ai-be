@@ -4,6 +4,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { CORS_CONFIG } from './utils/common.constant';
 import cookieParser from 'cookie-parser';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.useGlobalPipes(
@@ -23,7 +24,13 @@ async function bootstrap() {
     .addTag(process.env.APP_TAG || '')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup(process.env.APP_SWAGGER_APP_PREFIX || '', app, document);
-  await app.listen(process.env.APP_PORT || 3001);
+  SwaggerModule.setup(
+    process.env.APP_SWAGGER_APP_PREFIX || '/api',
+    app,
+    document,
+  );
+
+  const port = parseInt(process.env.APP_PORT || '3000', 10);
+  await app.listen(port, '0.0.0.0');
 }
 bootstrap();

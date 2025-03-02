@@ -14,3 +14,8 @@ export interface OllamaLLMModel {
   digest: string;
   details: ModelDetails;
 }
+
+export interface ModelInstallResponse {
+  message: string;
+  processId: string;
+}

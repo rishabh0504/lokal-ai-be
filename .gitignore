@@ -25,9 +25,9 @@ Thumbs.db
 yarn-error.log
 
 # Docker-related files (optional, but good practice)
-docker-compose.yml
+# docker-compose.yml
 docker-compose.override.yml
-Dockerfile
+# Dockerfile
 
 # Test reports
 coverage
