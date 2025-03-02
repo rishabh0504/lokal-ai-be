@@ -46,6 +46,43 @@ model ChatMessage {
   @@index([sessionId])
 }
 
+enum ModelStats {
+  TO_BE_INSTALLED
+  INSTALLATION_PROGRESS
+  INSTALLATION_RETRY
+  INSTALLATION_FAILED
+  INSTALLATION_COMPLETED
+  MODEL_NOT_FOUND
+}
+
+model OllamaModels {
+  id     String     @id @default(uuid())
+  name   String
+  status ModelStats @default(TO_BE_INSTALLED)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+enum CronJobStatus {
+  JOB_TO_BE_EXECUTED
+  JOB_RETRY
+  JOB_COMPLETED
+  JOB_IN_PROGRESS
+  JOB_FAILED
+}
+
+model CronJob {
+  id          String        @id @default(uuid())
+  name        String
+  description String?
+  status      CronJobStatus @default(JOB_TO_BE_EXECUTED)
+  cron        String
+  attempts    Int           @default(0)
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+}
+
 model LLMModel {
   id            String  @id @default(uuid())
   name          String  @unique

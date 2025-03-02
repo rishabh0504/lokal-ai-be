@@ -9,6 +9,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { SessionModule } from './modules/session/session.module';
 import { ToolsModule } from './modules/tools/tools.module';
 import { LokalAICommonModule } from './modules/common/common.module';
+import { BullModule } from '@nestjs/bull';
 
 @Module({
   imports: [
@@ -17,6 +18,14 @@ import { LokalAICommonModule } from './modules/common/common.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+    }),
+    BullModule.forRoot({
+      redis: {
+        host: process.env.REDIS_HOST,
+        port: process.env.REDIS_PORT
+          ? parseInt(process.env.REDIS_PORT, 10)
+          : 6379,
+      },
     }),
     AgentModule,
     ChatModule,

@@ -1,0 +1,104 @@
+services:
+  db:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - '5432:5432'
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d lokal_ai']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ollama:
+    image: ollama/ollama
+    restart: always
+    ports:
+      - '11434:11434'
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      OLLAMA_HOST: 0.0.0.0
+    healthcheck:
+      test: curl --fail http://localhost:11434/v1/models || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.1
+    restart: always
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
+    ports:
+      - '9200:9200'
+      - '9300:9300'
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    healthcheck:
+      test: curl -s http://localhost:9200 >/dev/null 2>&1 && exit 0 || exit 1
+
+  redis:
+    image: redis:latest
+    restart: always
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_ENV: production
+    ports:
+      - '3002:3000'
+    environment:
+      DATABASE_URL: ${DATABASE_URL_PROD}
+      NODE_OPTIONS: ${NODE_OPTIONS}
+      OLLAMA_HOST: http://ollama:11434
+      CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY}
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
+      JWT_TEMPLATE_NAME: ${JWT_TEMPLATE_NAME}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL}
+      QDRANT_URL: ${QDRANT_URL}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL}
+      APP_TITLE: ${APP_TITLE}
+      APP_DESCRIPTION: ${APP_DESCRIPTION}
+      APP_VERSION: ${APP_VERSION}
+      APP_TAG: ${APP_TAG}
+      APP_SWAGGER_APP_PREFIX: ${APP_SWAGGER_APP_PREFIX}
+      APP_PORT: ${APP_PORT}
+      ELASTICSEARCH_HOST: http://elasticsearch:9200
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      db:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+      redis:
+        condition: service_healthy # Add redis healthcheck
+    restart: always
+
+volumes:
+  db_data:
+  ollama_data:
+  esdata:
+  redis_data: # Added redis_data volume
